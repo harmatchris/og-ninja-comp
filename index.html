@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OG Ninja Comp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#0B0B14;--card:#141420;--card2:#1A1A2C;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --cor:#FF5E3A;--cor2:#FF9040;
+  --text:#fff;--muted:rgba(255,255,255,0.38);--dim:rgba(255,255,255,0.16);
+  --green:#34C759;--red:#FF3B30;--gold:#FFD60A;--r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;}
+#root{min-height:100%;display:flex;flex-direction:column;}
+button,input,select,textarea{font-family:inherit;}
+input,textarea,select{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);padding:12px 14px;
+  font-size:14px;outline:none;width:100%;transition:border-color .2s,background .2s;
+}
+input:focus,textarea:focus,select:focus{border-color:rgba(255,94,58,.5);background:rgba(255,94,58,.04);}
+input::placeholder{color:var(--dim);}
+select option{background:#1A1A2C;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes cpFlash{0%{transform:scale(1)}30%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .28s cubic-bezier(.16,1,.3,1) both;}
+.scale-in{animation:scaleIn .22s cubic-bezier(.16,1,.3,1) both;}
+/* sh-card: the Superhuman card primitive */
+.sh-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:0 4px 24px rgba(0,0,0,.28);
+  transition:background .18s,border-color .18s;
+}
+.sh-card:hover{background:#181828;border-color:var(--border2);}
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;border:none;cursor:pointer;
+  font-family:inherit;font-weight:700;border-radius:12px;
+  transition:transform .14s cubic-bezier(.34,1.56,.64,1),box-shadow .14s,opacity .14s;}
+.btn:active{transform:scale(.96)!important;}
+.btn:disabled{opacity:.38;pointer-events:none;}
+.btn-coral{background:linear-gradient(135deg,var(--cor),var(--cor2));color:#fff;box-shadow:0 6px 22px rgba(255,94,58,.3);}
+.btn-coral:hover{box-shadow:0 8px 30px rgba(255,94,58,.46);}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{background:rgba(255,255,255,.07);color:var(--text);border-color:var(--border2);}
+.btn-fall{background:transparent;color:rgba(255,120,100,.42);border:1px solid rgba(255,94,58,.14);}
+.btn-fall:hover{background:rgba(255,94,58,.07);color:var(--cor);border-color:rgba(255,94,58,.35);}
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,11,20,.95);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);padding:0 16px;height:56px;
+  display:flex;align-items:center;gap:10px;}
+.topbar-logo{width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--cor),var(--cor2));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 12px rgba(255,94,58,.28);flex-shrink:0;}
+.topbar-title{font-size:14px;font-weight:700;letter-spacing:-.2px;flex:1;}
+.topbar-sub{font-size:11px;color:var(--muted);margin-top:-1px;}
+/* live badge */
+.live-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+  letter-spacing:.06em;background:rgba(255,94,58,.14);color:var(--cor);
+  border:1px solid rgba(255,94,58,.28);display:flex;align-items:center;gap:5px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--cor);
+  box-shadow:0 0 6px var(--cor);animation:pulse 1.6s infinite;}
+/* chip */
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;
+  border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.chip:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.chip.active{background:rgba(255,94,58,.14);border-color:rgba(255,94,58,.4);color:var(--cor);}
+/* cp pills — obstacle name pills (Superhuman style) */
+.cp-pill{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:500;transition:all .22s;}
+.cp-pill.done{background:rgba(255,94,58,.12);border:1px solid rgba(255,94,58,.28);color:rgba(255,94,58,.85);}
+.cp-pill.cur{background:rgba(255,94,58,.22);border:1px solid rgba(255,94,58,.6);color:var(--cor);}
+.cp-pill.next{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
+.cp-pill.future{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.18);}
+/* THE big checkpoint button */
+.big-cp-btn{width:100%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--cor),var(--cor2));color:#fff;border-radius:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  font-family:'Inter',sans-serif;font-size:22px;font-weight:900;letter-spacing:.04em;
+  box-shadow:0 10px 38px rgba(255,94,58,.42);
+  transition:transform .14s cubic-bezier(.34,1.56,.64,1),box-shadow .14s;}
+.big-cp-btn:active{transform:scale(.96)!important;box-shadow:0 4px 14px rgba(255,94,58,.22)!important;}
+.big-cp-btn.flash{animation:cpFlash .32s ease;}
+/* gradient mono timer */
+.timer-grad{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:-2px;line-height:1;
+  background:linear-gradient(135deg,#fff 0%,var(--cor) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+/* label */
+.lbl{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.section{padding:18px 16px;display:flex;flex-direction:column;gap:12px;}
+.sep{height:1px;background:var(--border);}
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.74);
+  backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;}
+.modal-sheet{background:var(--card);border-radius:22px 22px 0 0;width:100%;max-width:520px;
+  padding:24px 20px 38px;animation:slideUp .28s cubic-bezier(.16,1,.3,1);}
+/* tabbar */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(11,11,20,.97);backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  display:flex;padding:8px 0 max(10px,env(safe-area-inset-bottom));}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:5px 0;cursor:pointer;color:var(--dim);transition:color .18s;border:none;background:transparent;}
+.tab-item.active{color:var(--cor);}
+.tab-item span{font-size:10px;font-weight:600;letter-spacing:.04em;}
+/* drag & drop */
+.drag-handle{cursor:grab;color:var(--dim);padding:4px 5px;border-radius:6px;
+  display:flex;align-items:center;transition:color .15s;}
+.drag-handle:hover{color:var(--muted);}
+.drag-over{border-color:rgba(255,94,58,.5)!important;background:rgba(255,94,58,.05)!important;}
+.dragging{opacity:.4;}
+/* winner card */
+.winner-card{border-radius:18px;padding:20px;
+  background:linear-gradient(135deg,rgba(255,94,58,.18),rgba(255,94,58,.06));
+  border:1px solid rgba(255,94,58,.28);box-shadow:0 6px 28px rgba(255,94,58,.1);
+  position:relative;overflow:hidden;}
+.winner-card::before{content:'';position:absolute;top:-28px;right:-22px;
+  width:100px;height:100px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,94,58,.2),transparent);}
+/* display */
+.display-root{background:#000;min-height:100vh;color:#fff;font-family:'Inter',sans-serif;}
+/* regelwerk */
+.rw-chapter{border-bottom:1px solid var(--border);}
+.rw-chapter summary{padding:15px 16px;cursor:pointer;font-weight:700;font-size:14px;
+  list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+.rw-chapter[open] summary::after{content:'▲';font-size:9px;color:var(--muted);}
+.rw-chapter summary::after{content:'▼';font-size:9px;color:var(--dim);}
+.rw-body{padding:0 16px 16px;font-size:13px;color:var(--muted);line-height:1.75;}
+.rw-body p{margin-bottom:8px;}
+.rw-body strong{color:rgba(255,255,255,.7);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useContext,createContext}=React;
+
+// ── FIREBASE ─────────────────────────────────────────────
+const FB_CFG={apiKey:"AIzaSyBQPi4f2qWg3xA65hLL7IpxOiq3kzVk5ls",authDomain:"ninja-hq-chris.firebaseapp.com",databaseURL:"https://ninja-hq-chris-default-rtdb.firebaseio.com",projectId:"ninja-hq-chris",storageBucket:"ninja-hq-chris.firebasestorage.app",messagingSenderId:"811964168411",appId:"1:811964168411:web:f49a87b1bdcb6aaebf74fe"};
+if(!firebase.apps.length)firebase.initializeApp(FB_CFG);
+const db=firebase.database();
+const fbSet=(p,v)=>db.ref(p).set(v);
+const fbUpdate=(p,v)=>db.ref(p).update(v);
+const fbRemove=(p)=>db.ref(p).remove();
+
+// ── UTILS ─────────────────────────────────────────────────
+const uid=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+const today=()=>new Date().toISOString().slice(0,10);
+const storage={get:(k,d=null)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
+const fmtMs=ms=>{if(ms==null||ms<0)return '--:--.---';const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000),ms3=Math.floor(ms%1000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms3).padStart(3,'0')}`;};
+
+// ── CONSTANTS ─────────────────────────────────────────────
+const IGN_CATS=[
+  {id:'bam',name:{de:'Bambinis 5–7',en:'Bambinis 5–7'},color:'#FF6B6B'},
+  {id:'km1',name:{de:'Kids M LK1',en:'Kids M LC1'},color:'#0A84FF'},
+  {id:'km2',name:{de:'Kids M LK2',en:'Kids M LC2'},color:'#32ADE6'},
+  {id:'kw1',name:{de:'Kids W LK1',en:'Kids F LC1'},color:'#FF2D78'},
+  {id:'kw2',name:{de:'Kids W LK2',en:'Kids F LC2'},color:'#FF6CAB'},
+  {id:'tm1',name:{de:'Teens M LK1',en:'Teens M LC1'},color:'#30D158'},
+  {id:'tm2',name:{de:'Teens M LK2',en:'Teens M LC2'},color:'#5DCA7E'},
+  {id:'tw1',name:{de:'Teens W LK1',en:'Teens F LC1'},color:'#BF5AF2'},
+  {id:'tw2',name:{de:'Teens W LK2',en:'Teens F LC2'},color:'#DA8FFF'},
+  {id:'am1',name:{de:'Adults M LK1',en:'Adults M LC1'},color:'#FF5E3A'},
+  {id:'am2',name:{de:'Adults M LK2',en:'Adults M LC2'},color:'#FF8C69'},
+  {id:'aw1',name:{de:'Adults W LK1',en:'Adults F LC1'},color:'#FF9F0A'},
+  {id:'aw2',name:{de:'Adults W LK2',en:'Adults F LC2'},color:'#FFCC02'},
+  {id:'msm',name:{de:'Masters 40+ M',en:'Masters 40+ M'},color:'#64D2FF'},
+  {id:'msw',name:{de:'Masters 40+ W',en:'Masters 40+ F'},color:'#5AC8FA'},
+];
+const MODES={classic:{id:'classic',name:{de:'Classic',en:'Classic'}},segment:{id:'segment',name:{de:'Segment Race',en:'Segment Race'}},lives:{id:'lives',name:{de:'Classic + Leben',en:'Classic + Lives'}},segliv:{id:'segliv',name:{de:'Segment + Leben',en:'Segment + Lives'}}};
+const DEF_OBS=[{id:'o1',name:'Warped Wall',isCP:true,order:0},{id:'o2',name:'Quintuple Steps',isCP:true,order:1},{id:'o3',name:'Spider Flip',isCP:true,order:2},{id:'o4',name:'Rolling Log',isCP:true,order:3},{id:'o5',name:'Cannonball Alley',isCP:true,order:4},{id:'o6',name:'Cargo Net',isCP:true,order:5},{id:'o7',name:'Lache Leap',isCP:true,order:6},{id:'o8',name:'Mega Wall',isCP:true,order:7}];
+
+const REGELWERK_DE=[
+  {nr:'1',title:'Allgemeines & Wettkampf',color:'#FF5E3A',content:`<p><strong>1.1 Veranstalter</strong> – Verantwortlich für sichere Durchführung, Hindernisse und Regelwerk-Einhaltung.</p><p><strong>1.2 Jury</strong> – Jede Station mind. eine Jury-Person für Zeitnahme und Checkpoint-Beurteilung.</p><p><strong>1.3 Protest</strong> – Innerhalb 15 Min. schriftlich. Gebühr CHF 20, bei berechtigtem Protest zurückerstattet.</p><p><strong>1.4 Ausrüstung</strong> – Geschlossene Schuhe Pflicht. Chalk erlaubt.</p>`},
+  {nr:'2',title:'Startsignal & Zeitnahme',color:'#0A84FF',content:`<p><strong>2.1 Startsignal</strong> – Drei kurze Töne (Beep-Beep-Beep) dann langer Ton (BEEEEP). Timer startet mit dem langen Ton.</p><p><strong>2.2 Frühstart</strong> – Lauf ungültig, Neustart möglich. Drei Frühstarts = Disqualifikation.</p><p><strong>2.3 LK1</strong> – Digitale Zeitmessung auf Millisekunden (MM:SS.mmm) verpflichtend.</p><p><strong>2.4 LK2</strong> – Stoppuhr auf Zehntelsekunden ausreichend.</p>`},
+  {nr:'3',title:'Checkpointsystem',color:'#30D158',content:`<p><strong>3.1 Definition</strong> – Stabiles Halten mind. 1 Sekunde ohne Vor-/Rückwärtsbewegung.</p><p><strong>3.2 Markieren</strong> – Jury markiert sobald stabile Halteposition erreicht.</p><p><strong>3.3 Fall</strong> – Zeit beim letzten gehaltenen CP gilt als offizielle Zeit.</p><p><strong>3.4 Gleichstand</strong> – Bei gleichem letzten CP entscheidet kürzere Zeit zum CP.</p><p><strong>3.5 Vollendung</strong> – Ziellinie überquert → Gesamtzeit gilt.</p>`},
+  {nr:'4',title:'Hindernisregeln',color:'#BF5AF2',content:`<p><strong>4.1 Reihenfolge</strong> – Hindernisse in festgelegter Reihenfolge.</p><p><strong>4.2 Überspringen</strong> – Annullierung ab diesem Punkt.</p><p><strong>4.3 Bodenkontakt</strong> – Berührt Athlet zwischen Hindernissen den Boden = Fall (Ausnahme: definierte Bodenbereiche).</p><p><strong>4.4 Externe Hilfe</strong> – Disqualifikation des Versuchs.</p>`},
+  {nr:'5',title:'Kategorien & LK',color:'#FF9F0A',content:`<p>• <strong>Bambinis</strong> 5–7 J. (gemischt) • <strong>Kids</strong> 8–11 (M/W) × LK1/LK2 • <strong>Teens</strong> 12–15 (M/W) × LK1/LK2 • <strong>Adults</strong> 16–39 (M/W) × LK1/LK2 • <strong>Masters</strong> 40+ (M/W)</p><p><strong>LK1</strong> – Erfahrene Athleten, digitale Zeitmessung Pflicht. <strong>LK2</strong> – Einsteiger. <strong>Aufstieg</strong> nach 3 Podiumsplätzen in LK2 verpflichtend.</p>`},
+  {nr:'6',title:'Wertung & Rangliste',color:'#64D2FF',content:`<p><strong>6.1 Primär</strong> – Anzahl abgeschlossener Checkpoints (absteigend).</p><p><strong>6.2 Sekundär</strong> – Zeit (aufsteigend). <strong>6.3 DNF</strong> – Kein Hindernis absolviert. <strong>6.4 DSQ</strong> – Keine Wertung.</p>`},
+  {nr:'7',title:'Leben-Modus',color:'#FF6B6B',content:`<p><strong>7.1 Anzahl</strong> – Veranstalter legt fest (Standard: 3).</p><p><strong>7.2 Abzug</strong> – Fall = ein Leben weniger, Segment-Neustart. <strong>7.3 Aufgebraucht</strong> – Segment endet, beste Zeit (weitester CP, kürzeste Zeit) gilt.</p>`},
+  {nr:'8',title:'Segment Race',color:'#5AC8FA',content:`<p><strong>8.1</strong> Segmente: Start- bis nächste Landeplattform. <strong>8.2</strong> Nur Segment-Zeit gemessen. <strong>8.3 Wertung</strong> – Primär: abgeschlossene Segmente, Sekundär: Gesamtzeit.</p>`},
+];
+const REGELWERK_EN=REGELWERK_DE.map((c,i)=>({...c,title:['General & Competition','Start Signal & Timing','Checkpoint System','Obstacle Rules','Categories & Levels','Ranking','Lives Mode','Segment Race'][i]||c.title}));
+
+const T={
+  de:{lang:'EN',app:'OG Ninja Comp',competitions:'Wettkämpfe',newComp:'Neuer Wettkampf',join:'Beitreten',compCode:'Wettkampf-Code',enterCode:'Code eingeben…',joinComp:'Beitreten',noComps:'Noch keine Wettkämpfe. Tippe + um zu starten.',compName:'Wettkampf-Name',compDate:'Datum',compLocation:'Ort',mode:'Modus',numStations:'Stationen',next:'Weiter',finish:'Speichern',obstacles:'Hindernisse',obsName:'Hindernisname',athletes:'Athleten',addAth:'Athlet hinzufügen',athName:'Name',station:'Station',openDisplay:'Anzeige öffnen',stationSetup:'Stationen-Setup',startCountdown:'Countdown starten',upNext:'Als Nächstes',nextAthlete:'Nächster Athlet',checkpoint:'Checkpoint',fall:'Fall melden',fallTitle:'Fall gemeldet',lastCP:'Letzter Checkpoint',officialTime:'Offizielle Zeit',confirm:'Bestätigen',cancel:'Abbrechen',retry:'Nochmal',runComplete:'Lauf abgeschlossen',official:'Offizielle Zeit',allCPs:'Checkpoints',nextAth:'Nächster Athlet',tabJury:'Jury',tabResults:'Rangliste',tabRules:'Regelwerk',live:'Live',dnf:'DNF',noRuns:'Noch keine Läufe',export:'Exportieren',category:'Kategorie',lives:'Leben',copyUrl:'URL kopieren',copied:'Kopiert!',allDone:'Alle Läufe absolviert!',sortHint:'⠿ ziehen zum sortieren',laufzeit:'Laufzeit'},
+  en:{lang:'DE',app:'OG Ninja Comp',competitions:'Competitions',newComp:'New Competition',join:'Join',compCode:'Competition Code',enterCode:'Enter code…',joinComp:'Join',noComps:'No competitions yet. Tap + to start.',compName:'Competition name',compDate:'Date',compLocation:'Venue',mode:'Mode',numStations:'Stations',next:'Next',finish:'Save',obstacles:'Obstacles',obsName:'Obstacle name',athletes:'Athletes',addAth:'Add athlete',athName:'Name',station:'Station',openDisplay:'Open display',stationSetup:'Station Setup',startCountdown:'Start countdown',upNext:'Up next',nextAthlete:'Next athlete',checkpoint:'Checkpoint',fall:'Report fall',fallTitle:'Fall reported',lastCP:'Last checkpoint',officialTime:'Official time',confirm:'Confirm',cancel:'Cancel',retry:'Retry',runComplete:'Run complete',official:'Official time',allCPs:'Checkpoints',nextAth:'Next athlete',tabJury:'Jury',tabResults:'Results',tabRules:'Rulebook',live:'Live',dnf:'DNF',noRuns:'No runs yet',export:'Export',category:'Category',lives:'Lives',copyUrl:'Copy URL',copied:'Copied!',allDone:'All runs completed!',sortHint:'⠿ drag to reorder',laufzeit:'Run time'},
+};
+
+// ── CONTEXT & LANG ────────────────────────────────────────
+const LangCtx=createContext('de');
+const useLang=()=>{const lang=useContext(LangCtx);const t=useCallback(k=>T[lang]?.[k]??T.de[k]??k,[lang]);const catName=useCallback(cat=>cat?.name?.[lang]||cat?.name?.de||'',[lang]);return{lang,t,catName};};
+
+// ── SOUND ─────────────────────────────────────────────────
+let _ac=null;
+const ac=()=>{if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;};
+const tone=(freq,dur,vol=.1,type='sine',delay=0)=>{try{const ctx=ac(),o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=5000;o.connect(f);f.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.value=freq;const t=ctx.currentTime+delay;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o.stop(t+dur+.01);}catch(e){}};
+const SFX={hover:()=>tone(1800,.02,.025),click:()=>{tone(440,.04,.08,'triangle');tone(330,.07,.04,'triangle',.02);},checkpoint:()=>{tone(523,.1,.16);tone(659,.1,.12,'sine',.1);tone(784,.2,.18,'sine',.2);},fall:()=>{tone(280,.12,.14,'sawtooth');tone(160,.22,.09,'sawtooth',.1);},countdown:cb=>{tone(880,.07,.16,'sine',0);tone(880,.07,.16,'sine',.5);tone(880,.07,.16,'sine',1);tone(1100,.8,.22,'sine',1.5);setTimeout(cb,2500);},complete:()=>{tone(523,.08,.18);tone(659,.08,.16,'sine',.1);tone(784,.1,.18,'sine',.2);tone(1047,.35,.2,'sine',.32);}};
+
+// ── ICONS ─────────────────────────────────────────────────
+const I={
+  Plus:({s=18,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  Check:({s=18,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  X:({s=15,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  ChevL:({s=20,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>,
+  ChevR:({s=15,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  Trophy:({s=18,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>,
+  Bolt:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill={c}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  Book:({s=18,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+  Flag:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
+  QR:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>,
+  Settings:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  Monitor:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+  Drag:({s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="rgba(255,255,255,.28)"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>,
+  Download:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  Trash:({s=14,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+  Play:({s=15,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill={c}><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+  Users:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+};
+
+// ── HOOKS ─────────────────────────────────────────────────
+const useFbVal=path=>{
+  const [val,setVal]=useState(undefined);
+  useEffect(()=>{if(!path)return;const ref=db.ref(path);const fn=s=>setVal(s.val());ref.on('value',fn);return()=>ref.off('value',fn);},[path]);
+  return val;
+};
+const useTimer=(running,startPerf)=>{
+  const [el,setEl]=useState(0);const raf=useRef();
+  useEffect(()=>{if(!running){cancelAnimationFrame(raf.current);return;}const tick=()=>{setEl(performance.now()-startPerf);raf.current=requestAnimationFrame(tick);};raf.current=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf.current);},[running,startPerf]);
+  return el;
+};
+
+// ── SHARED UI COMPONENTS ──────────────────────────────────
+const Spinner=()=><div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:40}}><div style={{width:26,height:26,border:'2.5px solid var(--border)',borderTopColor:'var(--cor)',borderRadius:'50%',animation:'spin .7s linear infinite'}}/></div>;
+const EmptyState=({icon,text})=><div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,padding:'44px 24px',color:'var(--muted)',textAlign:'center'}}><div style={{fontSize:30,opacity:.4}}>{icon}</div><div style={{fontSize:13}}>{text}</div></div>;
+
+const TopBar=({title,sub,onBack,right,logo=true})=>(
+  <div className="topbar">
+    {onBack?<button className="btn btn-ghost" style={{padding:'7px',borderRadius:10,minWidth:36}} onClick={onBack}><I.ChevL s={20}/></button>:logo&&<div className="topbar-logo"><I.Bolt s={14}/></div>}
+    <div style={{flex:1}}><div className="topbar-title">{title}</div>{sub&&<div className="topbar-sub">{sub}</div>}</div>
+    {right}
+  </div>
+);
+
+const QRCodeComp=({url,size=150})=>{
+  const ref=useRef();
+  useEffect(()=>{if(!ref.current||!url||!window.QRCode)return;ref.current.innerHTML='';try{new window.QRCode(ref.current,{text:url,width:size,height:size,colorDark:'#000',colorLight:'#fff'});}catch{ref.current.innerHTML=`<span style="font-size:10px;color:#666">${url}</span>`;};},[url,size]);
+  return <div style={{background:'#fff',padding:10,borderRadius:10,display:'inline-block'}} ref={ref}/>;
+};
+
+// ── DRAG & DROP REORDERABLE LIST ──────────────────────────
+const DragList=({items,onReorder,renderItem,keyFn})=>{
+  const dragIdx=useRef(null);
+  const [overIdx,setOverIdx]=useState(null);
+  const handleDragStart=(i,e)=>{dragIdx.current=i;e.dataTransfer.effectAllowed='move';};
+  const handleDragOver=(e,i)=>{e.preventDefault();e.dataTransfer.dropEffect='move';setOverIdx(i);};
+  const handleDrop=(e,i)=>{
+    e.preventDefault();
+    if(dragIdx.current===null||dragIdx.current===i){dragIdx.current=null;setOverIdx(null);return;}
+    const next=[...items];const [m]=next.splice(dragIdx.current,1);next.splice(i,0,m);
+    onReorder(next);dragIdx.current=null;setOverIdx(null);SFX.click();
+  };
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:6}}>
+      {items.map((item,i)=>(
+        <div key={keyFn?keyFn(item):i}
+          draggable
+          onDragStart={e=>handleDragStart(i,e)}
+          onDragOver={e=>handleDragOver(e,i)}
+          onDrop={e=>handleDrop(e,i)}
+          onDragEnd={()=>{dragIdx.current=null;setOverIdx(null);}}
+          className={`sh-card${overIdx===i&&dragIdx.current!==i?' drag-over':''}`}
+          style={{opacity:overIdx!==null&&dragIdx.current===i?.4:1,transition:'opacity .15s'}}>
+          {renderItem(item,i)}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── RANKING UTIL ──────────────────────────────────────────
+const computeRanked=(runList,catId)=>{
+  const cr=runList.filter(r=>r.catId===catId);const byA={};
+  cr.forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});
+  return Object.values(byA).sort((a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);});
+};
+
+// ════════════════════════════════════════════════════════════
+// SETUP WIZARD
+// ════════════════════════════════════════════════════════════
+const SetupWizard=({onDone,onBack,existingId=null})=>{
+  const {t,lang}=useLang();
+  const [step,setStep]=useState(0);
+  const [info,setInfo]=useState({name:'',date:today(),location:'',mode:'classic',numStations:2,lives:3});
+  const [obstacles,setObstacles]=useState(DEF_OBS.map(o=>({...o})));
+  const [athletes,setAthletes]=useState([]);
+  const [newObs,setNewObs]=useState('');
+  const [newAth,setNewAth]=useState({name:'',num:'1',cat:'am1'});
+  const [saving,setSaving]=useState(false);
+  const sI=(k,v)=>setInfo(i=>({...i,[k]:v}));
+  const addObs=()=>{if(!newObs.trim())return;setObstacles(o=>[...o,{id:uid(),name:newObs.trim(),isCP:true,order:o.length}]);setNewObs('');SFX.click();};
+  const addAth=()=>{if(!newAth.name.trim())return;setAthletes(p=>[...p,{id:uid(),...newAth}]);setNewAth({name:'',num:String(athletes.length+2),cat:newAth.cat});SFX.click();};
+  const reorderObs=arr=>setObstacles(arr.map((o,i)=>({...o,order:i})));
+  const reorderAth=arr=>setAthletes(arr);
+  const save=async()=>{
+    if(!info.name.trim())return;setSaving(true);
+    const id=existingId||uid();
+    const om={};obstacles.forEach((o,i)=>{om[o.id]={...o,order:i};});
+    const am={};athletes.forEach(a=>{am[a.id]=a;});
+    await fbSet(`ogn/${id}`,{info:{...info,createdAt:Date.now()},obstacles:om,athletes:athletes.length?am:null});
+    setSaving(false);SFX.complete();onDone(id);
+  };
+
+  return(
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      <TopBar title={['Setup',t('obstacles'),t('athletes')][step]||'Setup'} logo={false}
+        onBack={step===0?onBack:()=>setStep(s=>s-1)}
+        right={<div style={{fontSize:12,color:'var(--muted)',fontWeight:700}}>{step+1}/3</div>}/>
+      <div style={{display:'flex',gap:3,padding:'10px 16px',background:'rgba(255,255,255,.02)',borderBottom:'1px solid var(--border)'}}>
+        {[0,1,2].map(i=><div key={i} style={{flex:1,height:3,borderRadius:2,background:i<=step?'var(--cor)':'var(--border)',transition:'background .3s'}}/>)}
+      </div>
+
+      {step===0&&(
+        <div className="section fade-up" style={{flex:1}}>
+          <div className="lbl">{t('compName')}</div>
+          <input value={info.name} onChange={e=>sI('name',e.target.value)} placeholder="OG Ninja Cup 2026" autoFocus/>
+          <div style={{display:'flex',gap:8}}>
+            <div style={{flex:1}}><div className="lbl" style={{marginBottom:6}}>{t('compDate')}</div><input type="date" value={info.date} onChange={e=>sI('date',e.target.value)}/></div>
+            <div style={{flex:1.4}}><div className="lbl" style={{marginBottom:6}}>{t('compLocation')}</div><input value={info.location} onChange={e=>sI('location',e.target.value)} placeholder="Zurich Ninja Park"/></div>
+          </div>
+          <div className="lbl">{t('mode')}</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {Object.values(MODES).map(m=><button key={m.id} className={`chip${info.mode===m.id?' active':''}`} onClick={()=>{sI('mode',m.id);SFX.hover();}}>{m.name[lang]||m.name.de}</button>)}
+          </div>
+          {(info.mode==='lives'||info.mode==='segliv')&&(
+            <div>
+              <div className="lbl" style={{marginBottom:8}}>{t('lives')}: {info.lives}</div>
+              <div style={{display:'flex',gap:6}}>{[1,2,3,4,5].map(n=><button key={n} className={`chip${info.lives===n?' active':''}`} style={{flex:1,justifyContent:'center'}} onClick={()=>sI('lives',n)}>{n}❤️</button>)}</div>
+            </div>
+          )}
+          <div className="lbl">{t('numStations')}</div>
+          <div style={{display:'flex',gap:6}}>{[1,2,3,4].map(n=><button key={n} className={`chip${info.numStations===n?' active':''}`} style={{flex:1,justifyContent:'center'}} onClick={()=>sI('numStations',n)}>{n}</button>)}</div>
+        </div>
+      )}
+
+      {step===1&&(
+        <div className="section fade-up" style={{flex:1}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div className="lbl">{t('obstacles')} ({obstacles.length})</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>{t('sortHint')}</div>
+          </div>
+          <div style={{maxHeight:330,overflowY:'auto'}}>
+            <DragList items={obstacles} onReorder={reorderObs} keyFn={o=>o.id}
+              renderItem={(o,i)=>(
+                <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:8}}>
+                  <div className="drag-handle"><I.Drag s={16}/></div>
+                  <div style={{fontSize:11,color:'var(--muted)',minWidth:18,fontFamily:'JetBrains Mono',textAlign:'center'}}>{i+1}</div>
+                  <div style={{flex:1,fontSize:13,fontWeight:500}}>{o.name}</div>
+                  <button className={`chip${o.isCP?' active':''}`} style={{padding:'2px 9px',fontSize:10}}
+                    onClick={()=>setObstacles(obs=>obs.map(x=>x.id===o.id?{...x,isCP:!x.isCP}:x))}>CP</button>
+                  <button style={{background:'none',border:'none',cursor:'pointer',padding:4,display:'flex'}}
+                    onClick={()=>setObstacles(obs=>obs.filter(x=>x.id!==o.id))}><I.Trash s={13} c="var(--red)"/></button>
+                </div>
+              )}/>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <input value={newObs} onChange={e=>setNewObs(e.target.value)} placeholder={t('obsName')} onKeyDown={e=>{if(e.key==='Enter')addObs();}} style={{flex:1}}/>
+            <button className="btn btn-coral" style={{padding:'10px 16px',flexShrink:0}} onClick={addObs}><I.Plus s={16}/></button>
+          </div>
+        </div>
+      )}
+
+      {step===2&&(
+        <div className="section fade-up" style={{flex:1}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div className="lbl">{t('athletes')} ({athletes.length})</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>{t('sortHint')}</div>
+          </div>
+          <div style={{maxHeight:250,overflowY:'auto'}}>
+            {athletes.length===0?<EmptyState icon="👤" text="Noch keine Athleten"/>:
+              <DragList items={athletes} onReorder={reorderAth} keyFn={a=>a.id}
+                renderItem={(a,i)=>{const cat=IGN_CATS.find(c=>c.id===a.cat);return(
+                  <div style={{padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+                    <div className="drag-handle"><I.Drag s={15}/></div>
+                    <div style={{fontSize:11,color:'var(--cor)',minWidth:16,fontWeight:700}}>{i+1}</div>
+                    <div style={{flex:1,fontSize:13,fontWeight:600}}>{a.name}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>#{a.num}</div>
+                    <div style={{fontSize:10,padding:'2px 7px',borderRadius:10,background:`${cat?.color||'#888'}1A`,color:cat?.color||'#888',border:`1px solid ${cat?.color||'#888'}44`,fontWeight:600,whiteSpace:'nowrap'}}>{cat?.name[lang]||'?'}</div>
+                    <button style={{background:'none',border:'none',cursor:'pointer',padding:4,display:'flex'}} onClick={()=>setAthletes(a2=>a2.filter(x=>x.id!==a.id))}><I.Trash s={13} c="var(--red)"/></button>
+                  </div>
+                );}}/>
+            }
+          </div>
+          <div style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:14,padding:14,display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{display:'flex',gap:8}}>
+              <input value={newAth.num} onChange={e=>setNewAth(a=>({...a,num:e.target.value}))} placeholder="#" style={{width:60,flexShrink:0}}/>
+              <input value={newAth.name} onChange={e=>setNewAth(a=>({...a,name:e.target.value}))} placeholder={t('athName')} onKeyDown={e=>{if(e.key==='Enter')addAth();}}/>
+            </div>
+            <select value={newAth.cat} onChange={e=>setNewAth(a=>({...a,cat:e.target.value}))}>
+              {IGN_CATS.map(c=><option key={c.id} value={c.id}>{c.name[lang]||c.name.de}</option>)}
+            </select>
+            <button className="btn btn-coral" style={{padding:10,gap:6}} onClick={addAth}><I.Plus s={15}/> {t('addAth')}</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{padding:'0 16px 36px',marginTop:'auto'}}>
+        {step<2
+          ?<button className="btn btn-coral" style={{width:'100%',padding:15,fontSize:15}} disabled={step===0&&!info.name.trim()} onClick={()=>{SFX.click();setStep(s=>s+1);}}>{t('next')} <I.ChevR s={16}/></button>
+          :<button className="btn btn-coral" style={{width:'100%',padding:15,fontSize:15}} disabled={saving} onClick={()=>{SFX.click();save();}}>{saving?'Speichern…':<><I.Check s={17}/> {t('finish')}</>}</button>
+        }
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// HOME VIEW
+// ════════════════════════════════════════════════════════════
+const HomeView=({onOpen,lang,setLang})=>{
+  const {t}=useLang();
+  const comps=useFbVal('ogn');
+  const [creating,setCreating]=useState(false);
+  const [joinCode,setJoinCode]=useState('');
+  const [showJoin,setShowJoin]=useState(false);
+  if(creating)return<SetupWizard onDone={id=>{setCreating(false);onOpen(id);}} onBack={()=>setCreating(false)}/>;
+  const list=comps?Object.entries(comps).map(([id,v])=>({id,...v})).sort((a,b)=>(b.info?.createdAt||0)-(a.info?.createdAt||0)):[];
+  const handleJoin=()=>{const c=joinCode.trim().toUpperCase();if(comps&&comps[c])onOpen(c);else{SFX.fall();alert(lang==='de'?'Code nicht gefunden':'Code not found');}};
+  return(
+    <div style={{minHeight:'100vh'}}>
+      <TopBar title="OG Ninja Comp"
+        right={<div style={{display:'flex',gap:6}}>
+          <button className="btn btn-ghost" style={{padding:'5px 11px',fontSize:12,fontWeight:700}} onClick={()=>setLang(lang==='de'?'en':'de')}>{t('lang')}</button>
+          <button className="btn btn-ghost" style={{padding:'7px'}} onClick={()=>window.open(`${location.href.split('?')[0]}?mode=display`,'_blank')}><I.Monitor s={15}/></button>
+        </div>}/>
+      {/* Hero area */}
+      <div style={{padding:'32px 24px 22px',borderBottom:'1px solid var(--border)',background:'radial-gradient(ellipse at 50% -20%,rgba(255,94,58,.08) 0%,transparent 65%)'}}>
+        <div style={{fontSize:11,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',fontWeight:600,marginBottom:10}}>⚡ OG Games · Ninja Competition Tool</div>
+        <div style={{fontSize:30,fontWeight:900,letterSpacing:'-1px',lineHeight:1.1,marginBottom:5}}>{t('competitions')}</div>
+        <div style={{fontSize:13,color:'var(--muted)'}}>Firebase Live-Sync · 4 Stationen · DE / EN</div>
+      </div>
+      <div className="section">
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-ghost" style={{flex:1,padding:12,gap:6}} onClick={()=>setShowJoin(s=>!s)}><I.Users s={15}/> {t('join')}</button>
+          <button className="btn btn-coral" style={{flex:1,padding:12,gap:6}} onClick={()=>{SFX.click();setCreating(true);}}><I.Plus s={15}/> {t('newComp')}</button>
+        </div>
+        {showJoin&&(
+          <div className="sh-card scale-in" style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
+            <div className="lbl">{t('compCode')}</div>
+            <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder={t('enterCode')} style={{letterSpacing:'.14em',fontFamily:'JetBrains Mono'}} onKeyDown={e=>{if(e.key==='Enter')handleJoin();}}/>
+            <button className="btn btn-coral" style={{padding:11}} onClick={handleJoin}>{t('joinComp')}</button>
+          </div>
+        )}
+        {comps===undefined&&<Spinner/>}
+        {comps!==undefined&&list.length===0&&<EmptyState icon="🥷" text={t('noComps')}/>}
+        {list.map((c,i)=>(
+          <button key={c.id} className="sh-card btn fade-up"
+            style={{padding:16,textAlign:'left',flexDirection:'row',gap:14,width:'100%',animationDelay:`${i*.06}s`,cursor:'pointer'}}
+            onClick={()=>{SFX.click();onOpen(c.id);}}>
+            <div style={{width:44,height:44,borderRadius:13,background:'linear-gradient(135deg,var(--cor),var(--cor2))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>🥷</div>
+            <div style={{flex:1,textAlign:'left'}}>
+              <div style={{fontWeight:800,fontSize:15,letterSpacing:'-.2px'}}>{c.info?.name||'Wettkampf'}</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{c.info?.date||''}{c.info?.location?` · ${c.info.location}`:''}</div>
+            </div>
+            <div style={{fontSize:10,fontFamily:'JetBrains Mono',padding:'2px 8px',borderRadius:8,background:'rgba(255,94,58,.12)',color:'var(--cor)',letterSpacing:'.1em',alignSelf:'center'}}>{c.id}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// COORDINATOR VIEW
+// ════════════════════════════════════════════════════════════
+const CoordinatorView=({compId,onBack,lang,setLang})=>{
+  const {t,catName}=useLang();
+  const info=useFbVal(`ogn/${compId}/info`);
+  const athletes=useFbVal(`ogn/${compId}/athletes`);
+  const stations=useFbVal(`ogn/${compId}/stations`);
+  const [editing,setEditing]=useState(false);
+  const [showQR,setShowQR]=useState(null);
+  const [copied,setCopied]=useState(null);
+  if(!info)return<Spinner/>;
+  if(editing)return<SetupWizard existingId={compId} onDone={()=>setEditing(false)} onBack={()=>setEditing(false)}/>;
+  const numSt=info.numStations||1;
+  const base=window.location.href.split('?')[0];
+  const athList=athletes?Object.values(athletes):[];
+  const assignCat=(n,id)=>{fbSet(`ogn/${compId}/stations/${n}/cat`,id);SFX.click();};
+  const copyUrl=(url,k)=>{navigator.clipboard?.writeText(url);setCopied(k);setTimeout(()=>setCopied(null),2200);SFX.click();};
+  return(
+    <div style={{minHeight:'100vh',paddingBottom:40}}>
+      <TopBar title={info.name||'Coordinator'} sub={`${compId} · ${MODES[info.mode]?.name[lang]||info.mode}`} onBack={onBack}
+        right={<div style={{display:'flex',gap:6}}>
+          <button className="btn btn-ghost" style={{padding:'7px'}} onClick={()=>setEditing(true)}><I.Settings s={15}/></button>
+          <button className="btn btn-ghost" style={{padding:'5px 10px',fontSize:12,fontWeight:700}} onClick={()=>setLang(lang==='de'?'en':'de')}>{t('lang')}</button>
+        </div>}/>
+      <div className="section">
+        {/* Stat badges */}
+        <div style={{display:'flex',gap:8}}>
+          {[{label:t('athletes'),val:athList.length},{label:t('numStations'),val:numSt},{label:'Modus',val:MODES[info.mode]?.name[lang]||info.mode}].map(s=>(
+            <div key={s.label} className="sh-card" style={{flex:1,padding:'11px 12px',textAlign:'center'}}>
+              <div style={{fontSize:18,fontWeight:900,color:'var(--cor)'}}>{s.val}</div>
+              <div style={{fontSize:10,color:'var(--muted)',marginTop:2,letterSpacing:'.04em'}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-ghost" style={{width:'100%',padding:13,gap:8}} onClick={()=>window.open(`${base}?mode=display&comp=${compId}`,'_blank')}>
+          <I.Monitor s={15}/> {t('openDisplay')} ↗
+        </button>
+        <div className="sep"/>
+        <div className="lbl">{t('stationSetup')}</div>
+        {Array.from({length:numSt},(_,i)=>i+1).map(n=>{
+          const st=stations?.[n]||{};const cat=IGN_CATS.find(c=>c.id===st.cat);
+          const url=`${base}?station=${n}&comp=${compId}`;
+          return(
+            <div key={n} className="sh-card fade-up" style={{padding:16,display:'flex',flexDirection:'column',gap:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:40,height:40,borderRadius:11,background:'linear-gradient(135deg,var(--cor),var(--cor2))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:18,color:'#fff',boxShadow:'0 4px 14px rgba(255,94,58,.26)',flexShrink:0}}>{n}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:15}}>{t('station')} {n}</div>
+                  {cat?<div style={{fontSize:12,color:cat.color,marginTop:1}}>{catName(cat)} · {athList.filter(a=>a.cat===st.cat).length} Ath.</div>:<div style={{fontSize:12,color:'var(--muted)'}}>Keine Kategorie</div>}
+                </div>
+                <button className="btn btn-ghost" style={{padding:'7px'}} onClick={()=>setShowQR(showQR===n?null:n)}><I.QR s={15}/></button>
+              </div>
+              {showQR===n&&(
+                <div className="scale-in" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,background:'rgba(255,255,255,.03)',borderRadius:12,padding:16}}>
+                  <QRCodeComp url={url} size={150}/>
+                  <div style={{fontSize:10,color:'var(--muted)',textAlign:'center',wordBreak:'break-all',maxWidth:260}}>{url}</div>
+                  <button className="btn btn-ghost" style={{fontSize:12,padding:'6px 14px',gap:6}} onClick={()=>copyUrl(url,n)}>
+                    {copied===n?<><I.Check s={13} c="var(--green)"/> {t('copied')}</>:<><I.Download s={13}/> {t('copyUrl')}</>}
+                  </button>
+                </div>
+              )}
+              <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                {IGN_CATS.map(c=>(
+                  <button key={c.id} className={`chip${st.cat===c.id?' active':''}`}
+                    style={{fontSize:10,padding:'3px 9px',...(st.cat===c.id?{background:`${c.color}1A`,borderColor:`${c.color}55`,color:c.color}:{})}}
+                    onClick={()=>assignCat(n,c.id)}>{c.name[lang]}</button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY — WAIT
+// ════════════════════════════════════════════════════════════
+const JuryWait=({cat,queue,obstacles,onStart,compId})=>{
+  const {t,catName,lang}=useLang();
+  const obstArr=obstacles?Object.values(obstacles).sort((a,b)=>a.order-b.order):[];
+  const cpObst=obstArr.filter(o=>o.isCP);
+  const [localQ,setLocalQ]=useState(null);
+  const effectiveQ=localQ||queue;
+  const reorderQ=arr=>{
+    setLocalQ(arr);
+    // persist order to firebase
+    const updates={};arr.forEach((a,i)=>{updates[`ogn/${compId}/athletes/${a.id}/queueOrder`]=i;});
+    if(Object.keys(updates).length)db.ref().update(updates);
+  };
+  const next=effectiveQ[0];
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:0}}>
+      {cat&&<div style={{padding:'14px 16px 0',display:'flex',justifyContent:'center'}}><div className="live-badge"><div className="live-dot"/>{catName(cat)}</div></div>}
+      {!next&&<EmptyState icon="✅" text={t('allDone')}/>}
+      {next&&(
+        <div className="section" style={{gap:10}}>
+          {/* Next athlete hero card */}
+          <div className="sh-card fade-up" style={{padding:20,position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 50% 110%,rgba(255,94,58,.06) 0%,transparent 65%)'}}/>
+            <div className="lbl" style={{marginBottom:10}}>{t('nextAthlete')}</div>
+            <div style={{fontSize:26,fontWeight:900,letterSpacing:'-.6px',marginBottom:4}}>{next.name}</div>
+            <div style={{fontSize:13,color:'var(--muted)',fontFamily:'JetBrains Mono',marginBottom:14}}>#{next.num}</div>
+            {/* CP obstacle name pills */}
+            <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
+              {cpObst.map(o=><div key={o.id} className="cp-pill future">{o.name}</div>)}
+            </div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>{cpObst.length} Checkpoints · {obstArr.length} Hindernisse</div>
+            <button className="btn btn-coral" style={{width:'100%',padding:15,fontSize:16,gap:8,marginTop:16}} onClick={()=>{SFX.click();onStart(next);}}>
+              <I.Play s={16}/> {t('startCountdown')}
+            </button>
+          </div>
+          {/* Queue drag-reorder */}
+          {effectiveQ.length>1&&(
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <div className="lbl">Startreihenfolge</div>
+                <div style={{fontSize:10,color:'var(--muted)'}}>{t('sortHint')}</div>
+              </div>
+              <DragList items={effectiveQ.slice(1)} onReorder={arr=>reorderQ([effectiveQ[0],...arr])} keyFn={a=>a.id}
+                renderItem={(a,i)=>(
+                  <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:8}}>
+                    <div className="drag-handle"><I.Drag s={15}/></div>
+                    <div style={{fontSize:11,color:'var(--cor)',minWidth:16,fontWeight:700}}>{i+2}</div>
+                    <div style={{flex:1,fontSize:13,fontWeight:600}}>{a.name}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>#{a.num}</div>
+                  </div>
+                )}/>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY — COUNTDOWN
+// ════════════════════════════════════════════════════════════
+const JuryCountdown=({onGo})=>{
+  const {lang}=useLang();
+  const [count,setCount]=useState(3);const [go,setGo]=useState(false);
+  useEffect(()=>{
+    SFX.countdown(()=>{setGo(true);setTimeout(onGo,500);});
+    const t1=setTimeout(()=>setCount(2),500),t2=setTimeout(()=>setCount(1),1000),t3=setTimeout(()=>setCount(0),1500);
+    return()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);};
+  },[]);
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'65vh',gap:12}}>
+      <div className="timer-grad" style={{fontSize:go?88:130,letterSpacing:'-4px',transition:'color .2s',animation:'scaleIn .2s ease'}}>
+        {go?'GO!':(count===0?'GO!':count)}
+      </div>
+      <div style={{fontSize:13,color:'var(--muted)',letterSpacing:'.1em',textTransform:'uppercase'}}>
+        {go?(lang==='de'?'Los!':'Go!'):(lang==='de'?'Bereit machen…':'Get ready…')}
+      </div>
+      {go&&<div className="live-dot" style={{marginTop:4}}/>}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY — ACTIVE RUN
+// ════════════════════════════════════════════════════════════
+const JuryActive=({compId,stNum,athlete,obstacles,info,lives,onFall,onComplete})=>{
+  const {lang}=useLang();
+  const obstArr=obstacles?Object.values(obstacles).sort((a,b)=>a.order-b.order):[];
+  const cpObst=obstArr.filter(o=>o.isCP);
+  const [doneCP,setDoneCP]=useState([]);
+  const [startPerf]=useState(()=>performance.now());
+  const [startEpoch]=useState(()=>Date.now());
+  const el=useTimer(true,startPerf);
+  const [flash,setFlash]=useState(false);
+  const hasLives=info.mode==='lives'||info.mode==='segliv';
+
+  useEffect(()=>{
+    fbSet(`ogn/${compId}/activeRuns/${stNum}`,{athleteId:athlete.id,athleteName:athlete.name,startEpoch,catId:athlete.cat||null,doneCP:[],livesLeft:lives});
+    return()=>fbRemove(`ogn/${compId}/activeRuns/${stNum}`);
+  },[]);
+  useEffect(()=>{if(doneCP.length>0)fbUpdate(`ogn/${compId}/activeRuns/${stNum}`,{doneCP,livesLeft:lives});},[doneCP,lives]);
+
+  const nextIdx=doneCP.length,nextCp=cpObst[nextIdx],allDone=doneCP.length>=cpObst.length;
+
+  const handleCP=()=>{
+    if(allDone)return;
+    SFX.checkpoint();setFlash(true);setTimeout(()=>setFlash(false),320);
+    const nd=[...doneCP,{obsId:nextCp.id,name:nextCp.name,time:Date.now()-startEpoch}];
+    setDoneCP(nd);
+    if(nd.length>=cpObst.length)setTimeout(()=>onComplete({doneCP:nd,finalTime:performance.now()-startPerf,lives}),400);
+  };
+  const handleFall=()=>{SFX.fall();onFall({doneCP,time:performance.now()-startPerf,lives});};
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',minHeight:'calc(100vh - 56px)',paddingBottom:16}}>
+      {/* Athlete card with gradient glow + timer */}
+      <div className="sh-card" style={{margin:'12px 16px',padding:'18px 20px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 50% 110%,rgba(255,94,58,.09) 0%,transparent 58%)'}}/>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+          <div>
+            <div style={{fontSize:22,fontWeight:800,letterSpacing:'-.5px'}}>{athlete.name}</div>
+            <div style={{fontSize:12,color:'var(--muted)',marginTop:3,fontFamily:'JetBrains Mono'}}>#{athlete.num}</div>
+          </div>
+          {hasLives&&(
+            <div style={{textAlign:'right'}}>
+              <div className="lbl" style={{marginBottom:7}}>{lang==='de'?'Leben':'Lives'}</div>
+              <div style={{display:'flex',gap:6,justifyContent:'flex-end'}}>
+                {Array.from({length:info.lives||3},(_,i)=>(
+                  <div key={i} style={{width:11,height:11,borderRadius:'50%',background:i<lives?'var(--cor)':'rgba(255,255,255,.07)',boxShadow:i<lives?'0 0 8px rgba(255,94,58,.6)':'none',transition:'all .3s'}}/>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{textAlign:'center'}}>
+          <div className="lbl" style={{marginBottom:10}}>{lang==='de'?'Laufzeit':'Run time'}</div>
+          <div className="timer-grad" style={{fontSize:54}}>{fmtMs(el)}</div>
+          {nextCp&&!allDone&&<div style={{fontSize:12,color:'var(--muted)',marginTop:8}}>{nextCp.name} · CP {nextIdx+1}/{cpObst.length}</div>}
+        </div>
+      </div>
+
+      {/* CP name pills track */}
+      <div style={{padding:'4px 16px 8px'}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+          {cpObst.map((o,i)=>{
+            const done=doneCP.some(d=>d.obsId===o.id);const cur=!done&&i===nextIdx;const nxt=!done&&!cur&&i===nextIdx+1;
+            return<div key={o.id} className={`cp-pill ${done?'done':cur?'cur':nxt?'next':'future'}`}>{done&&<span style={{fontSize:10,marginRight:3}}>✓</span>}{o.name}</div>;
+          })}
+        </div>
+      </div>
+
+      {/* THE BIG CHECKPOINT BUTTON */}
+      {!allDone&&(
+        <div style={{padding:'6px 16px',flex:1,display:'flex',flexDirection:'column',gap:8}}>
+          <button className={`big-cp-btn${flash?' flash':''}`} style={{flex:1,minHeight:185}} onClick={handleCP}>
+            <div style={{fontSize:42}}>🥷</div>
+            <div>CHECKPOINT</div>
+            {nextCp&&<div style={{fontSize:15,opacity:.82,fontWeight:600,letterSpacing:'.01em'}}>{nextCp.name}</div>}
+          </button>
+          <button className="btn btn-fall" style={{width:'100%',padding:14,fontSize:13,gap:7}} onClick={handleFall}>
+            <I.X s={14}/> {lang==='de'?'Fall melden':'Report fall'}
+          </button>
+        </div>
+      )}
+
+      {allDone&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:'0 16px'}}>
+          <div style={{fontSize:52}}>🏁</div>
+          <div style={{fontSize:22,fontWeight:900,color:'var(--green)'}}>{lang==='de'?'Ziel erreicht!':'Finish!'}</div>
+          <div className="timer-grad" style={{fontSize:38}}>{fmtMs(el)}</div>
+          <button className="btn btn-coral" style={{width:'100%',padding:15,fontSize:16,gap:8,marginTop:8}}
+            onClick={()=>onComplete({doneCP,finalTime:performance.now()-startPerf,lives})}>
+            <I.Flag s={16}/> {lang==='de'?'Bestätigen':'Confirm finish'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY — FALL MODAL
+// ════════════════════════════════════════════════════════════
+const FallModal=({athlete,doneCP,obstacles,time,mode,lives,onConfirm,onRetry,onCancel})=>{
+  const {t,lang}=useLang();
+  const obstArr=obstacles?Object.values(obstacles).sort((a,b)=>a.order-b.order):[];
+  const cpObst=obstArr.filter(o=>o.isCP);
+  const lastCP=doneCP.length>0?cpObst[doneCP.length-1]:null;
+  const hasLives=mode==='lives'||mode==='segliv';
+  return(
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
+        <div style={{textAlign:'center',marginBottom:4}}><div style={{fontSize:40}}>💥</div></div>
+        <div style={{fontSize:20,fontWeight:900,textAlign:'center',marginBottom:4}}>{t('fallTitle')}</div>
+        <div style={{fontSize:13,color:'var(--muted)',textAlign:'center',marginBottom:16}}>{athlete.name} · #{athlete.num}</div>
+        <div className="sh-card" style={{padding:16,marginBottom:14}}>
+          <div className="lbl" style={{marginBottom:6}}>{t('lastCP')}</div>
+          <div style={{fontSize:17,fontWeight:700,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span>{lastCP?lastCP.name:t('dnf')}</span>
+            <span style={{color:'var(--cor)',fontSize:13}}>{doneCP.length}/{cpObst.length} CPs</span>
+          </div>
+          <div className="lbl" style={{marginTop:12,marginBottom:6}}>{t('officialTime')}</div>
+          <div className="timer-grad" style={{fontSize:32}}>{fmtMs(time)}</div>
+        </div>
+        {hasLives&&lives>1&&onRetry&&(
+          <button className="btn btn-coral" style={{width:'100%',padding:13,marginBottom:8,gap:8}} onClick={onRetry}>❤️ {t('retry')} ({lives-1} {lang==='de'?'Leben übrig':'lives left'})</button>
+        )}
+        <button className="btn" style={{width:'100%',padding:13,marginBottom:8,gap:8,background:'rgba(255,59,48,.1)',color:'var(--red)',border:'1px solid rgba(255,59,48,.2)'}} onClick={onConfirm}><I.Check s={15}/> {t('confirm')} Fall</button>
+        <button className="btn btn-ghost" style={{width:'100%',padding:12}} onClick={onCancel}>{t('cancel')}</button>
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY — DONE
+// ════════════════════════════════════════════════════════════
+const JuryDone=({athlete,result,cat,onNext})=>{
+  const {t,lang,catName}=useLang();
+  const ok=result.status==='complete';
+  useEffect(()=>{if(ok)SFX.complete();},[]);
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'44px 20px 20px',gap:16}}>
+      <div style={{fontSize:54}}>{ok?'🏆':'💪'}</div>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:'-.4px'}}>{t('runComplete')}</div>
+      <div style={{fontSize:14,color:'var(--muted)'}}>{athlete.name}</div>
+      <div className="sh-card" style={{width:'100%',padding:20,display:'flex',flexDirection:'column',gap:12}}>
+        {cat&&(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div className="lbl">{t('category')}</div><div style={{fontSize:11,padding:'3px 10px',borderRadius:10,background:`${cat.color}1A`,color:cat.color,border:`1px solid ${cat.color}44`,fontWeight:600}}>{catName(cat)}</div></div>)}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div className="lbl">{t('official')}</div><div className="timer-grad" style={{fontSize:32}}>{fmtMs(result.finalTime)}</div></div>
+        <div style={{display:'flex',justifyContent:'space-between'}}><div className="lbl">{t('allCPs')}</div><div style={{fontWeight:700,fontSize:15}}>{result.doneCP?.length||0} / {result.totalCPs||'?'} CPs</div></div>
+        <div style={{display:'flex',justifyContent:'space-between'}}><div className="lbl">Status</div><div style={{fontWeight:700,color:ok?'var(--green)':'var(--cor)'}}>{ok?(lang==='de'?'✅ Abgeschlossen':'✅ Completed'):'💥 Fall'}</div></div>
+      </div>
+      <button className="btn btn-coral" style={{width:'100%',padding:15,fontSize:15,gap:8}} onClick={onNext}><I.ChevR s={16}/> {t('nextAth')}</button>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// REGELWERK
+// ════════════════════════════════════════════════════════════
+const Regelwerk=()=>{
+  const {lang}=useLang();const rw=lang==='en'?REGELWERK_EN:REGELWERK_DE;
+  return(<div style={{paddingBottom:80}}>{rw.map(ch=>(<details key={ch.nr} className="rw-chapter"><summary><span><span style={{color:ch.color,fontWeight:800,marginRight:8,fontSize:15}}>{ch.nr}</span>{ch.title}</span></summary><div className="rw-body" dangerouslySetInnerHTML={{__html:ch.content}}/></details>))}</div>);
+};
+
+// ════════════════════════════════════════════════════════════
+// RESULTS VIEW
+// ════════════════════════════════════════════════════════════
+const ResultsView=({compId,athletes})=>{
+  const {t,lang,catName}=useLang();
+  const runs=useFbVal(`ogn/${compId}/completedRuns`);
+  const [selCat,setSelCat]=useState(null);
+  const runList=runs?Object.values(runs):[];
+  const athMap=athletes||{};
+  const catsWithRuns=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
+  useEffect(()=>{if(!selCat&&catsWithRuns.length>0)setSelCat(catsWithRuns[0].id);},[catsWithRuns.length]);
+  const ranked=selCat?computeRanked(runList,selCat):[];
+  const medals=['🥇','🥈','🥉'];
+  const exportAll=()=>{
+    const lines=['OG Ninja Comp · Results',new Date().toLocaleDateString(),''];
+    catsWithRuns.forEach(c=>{const r=computeRanked(runList,c.id);if(!r.length)return;lines.push(`\n=== ${catName(c)} ===`);r.forEach((run,i)=>{const a=athMap[run.athleteId]||{name:run.athleteName||'?',num:'?'};lines.push(`${i+1}. #${a.num} ${a.name}  |  ${run.doneCP?.length||0} CPs  |  ${fmtMs(run.finalTime)}`);});});
+    const text=lines.join('\n');
+    if(navigator.share)navigator.share({title:'OG Ninja Results',text});else if(navigator.clipboard)navigator.clipboard.writeText(text);
+    SFX.complete();
+  };
+  return(
+    <div style={{paddingBottom:82}}>
+      <div style={{overflowX:'auto',padding:'12px 16px',display:'flex',gap:6,borderBottom:'1px solid var(--border)'}}>
+        {catsWithRuns.map(c=>(
+          <button key={c.id} className={`chip${selCat===c.id?' active':''}`}
+            style={{flexShrink:0,fontSize:11,...(selCat===c.id?{background:`${c.color}1A`,borderColor:`${c.color}55`,color:c.color}:{})}}
+            onClick={()=>{setSelCat(c.id);SFX.hover();}}>{c.name[lang]}</button>
+        ))}
+      </div>
+      {catsWithRuns.length===0&&<EmptyState icon="📋" text={t('noRuns')}/>}
+      {selCat&&ranked.length>0&&(()=>{
+        return(
+          <div className="section">
+            {ranked[0]&&(()=>{const a=athMap[ranked[0].athleteId]||{name:ranked[0].athleteName||'?',num:'?'};return(
+              <div className="winner-card">
+                <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8,fontWeight:600}}>🥇 Platz 1</div>
+                <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}</div>
+                <div className="timer-grad" style={{fontSize:28,marginTop:6}}>{fmtMs(ranked[0].finalTime)}</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{ranked[0].doneCP?.length||0} / {ranked[0].totalCPs||'?'} CPs · #{a.num}</div>
+              </div>
+            );})()} 
+            {ranked.slice(1).map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
+              <div key={r.athleteId} className="sh-card fade-up" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'var(--muted)'}}>{i<2?medals[i+1]:i+2}</div>
+                <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14}}>{a.name}</div><div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>#{a.num} · {r.doneCP?.length||0} CPs</div></div>
+                <div className="timer-grad" style={{fontSize:15}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+              </div>
+            );})}
+            <button className="btn btn-ghost" style={{width:'100%',padding:12,gap:8}} onClick={exportAll}><I.Download s={15}/> {t('export')}</button>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// JURY APP (tabbed shell)
+// ════════════════════════════════════════════════════════════
+const JuryApp=({compId,stNum})=>{
+  const {t,lang,catName}=useLang();
+  const [tab,setTab]=useState('jury');
+  const info=useFbVal(`ogn/${compId}/info`);
+  const obstacles=useFbVal(`ogn/${compId}/obstacles`);
+  const athletesMap=useFbVal(`ogn/${compId}/athletes`);
+  const stData=useFbVal(`ogn/${compId}/stations/${stNum}`);
+  const completedRuns=useFbVal(`ogn/${compId}/completedRuns`);
+  const [phase,setPhase]=useState('wait');
+  const [currentAth,setCurrentAth]=useState(null);
+  const [fallData,setFallData]=useState(null);
+  const [doneResult,setDoneResult]=useState(null);
+  const [lives,setLives]=useState(3);
+  useEffect(()=>{if(info)setLives(info.lives||3);},[info?.lives]);
+
+  if(!info||obstacles===undefined)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10}}><Spinner/><div style={{fontSize:12,color:'var(--muted)'}}>Station {stNum} · {compId}</div></div>
+  );
+
+  const catId=stData?.cat;const cat=IGN_CATS.find(c=>c.id===catId);
+  const athList=athletesMap?Object.values(athletesMap):[];
+  const doneIds=new Set(completedRuns?Object.values(completedRuns).filter(r=>r.catId===catId).map(r=>r.athleteId):[]);
+  const queue=athList.filter(a=>a.cat===catId&&!doneIds.has(a.id)).sort((a,b)=>(a.queueOrder??999)-(b.queueOrder??999));
+
+  const obstArr=obstacles?Object.values(obstacles).sort((a,b)=>a.order-b.order):[];
+  const cpObst=obstArr.filter(o=>o.isCP);
+
+  const handleStart=ath=>{setCurrentAth(ath);setLives(info.lives||3);setPhase('countdown');};
+  const handleGo=()=>setPhase('active');
+  const handleFall=data=>{setFallData(data);setPhase('fall');};
+  const handleRetry=()=>{setLives(l=>l-1);setPhase('active');};
+  const handleFallConfirm=async()=>{
+    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:fallData.doneCP||[],totalCPs:cpObst.length,finalTime:fallData.time,lives,status:'fall',timestamp:Date.now()};
+    await fbSet(`ogn/${compId}/completedRuns/${uid()}`,result);setDoneResult(result);setPhase('done');SFX.complete();
+  };
+  const handleComplete=async data=>{
+    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:data.doneCP||[],totalCPs:cpObst.length,finalTime:data.finalTime,lives:data.lives,status:'complete',timestamp:Date.now()};
+    await fbSet(`ogn/${compId}/completedRuns/${uid()}`,result);setDoneResult(result);setPhase('done');
+  };
+  const handleNext=()=>{setPhase('wait');setCurrentAth(null);setFallData(null);setDoneResult(null);setLives(info.lives||3);};
+  const inRun=phase==='active'||phase==='countdown';
+
+  const juryContent=(()=>{
+    if(phase==='countdown')return<JuryCountdown onGo={handleGo}/>;
+    if(phase==='active')return<JuryActive compId={compId} stNum={stNum} athlete={currentAth} obstacles={obstacles} info={info} lives={lives} onFall={handleFall} onComplete={handleComplete}/>;
+    if(phase==='done')return<JuryDone athlete={currentAth} result={doneResult} cat={cat} onNext={handleNext}/>;
+    return<JuryWait cat={cat} queue={queue} obstacles={obstacles} onStart={handleStart} compId={compId}/>;
+  })();
+
+  return(
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      <TopBar title={`${t('station')} ${stNum}`} sub={cat?catName(cat):compId}
+        right={inRun?<div className="live-badge"><div className="live-dot"/>LIVE</div>:null}/>
+      <div style={{flex:1,overflowY:'auto'}}>
+        {tab==='jury'&&juryContent}
+        {tab==='results'&&!inRun&&<ResultsView compId={compId} athletes={athletesMap}/>}
+        {tab==='rules'&&!inRun&&<Regelwerk/>}
+      </div>
+      {!inRun&&(
+        <nav className="tabbar">
+          {[{id:'jury',ic:<I.Bolt s={20}/>,lb:t('tabJury')},{id:'results',ic:<I.Trophy s={20}/>,lb:t('tabResults')},{id:'rules',ic:<I.Book s={20}/>,lb:t('tabRules')}].map(tb=>(
+            <button key={tb.id} className={`tab-item${tab===tb.id?' active':''}`} onClick={()=>{setTab(tb.id);SFX.hover();}}>{tb.ic}<span>{tb.lb}</span></button>
+          ))}
+        </nav>
+      )}
+      {phase==='fall'&&fallData&&(
+        <FallModal athlete={currentAth} doneCP={fallData.doneCP} obstacles={obstacles} time={fallData.time} mode={info.mode} lives={lives}
+          onConfirm={handleFallConfirm} onRetry={(info.mode==='lives'||info.mode==='segliv')&&lives>1?handleRetry:null} onCancel={()=>setPhase('active')}/>
+      )}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// DISPLAY VIEW
+// ════════════════════════════════════════════════════════════
+const DisplayView=({compId})=>{
+  const {lang,catName,t}=useLang();
+  const info=useFbVal(`ogn/${compId}/info`);
+  const athletesMap=useFbVal(`ogn/${compId}/athletes`);
+  const completedRuns=useFbVal(`ogn/${compId}/completedRuns`);
+  const activeRuns=useFbVal(`ogn/${compId}/activeRuns`);
+  const [catIdx,setCatIdx]=useState(0);const [scrollOff,setScrollOff]=useState(0);const [nowMs,setNowMs]=useState(Date.now());
+  const runList=completedRuns?Object.values(completedRuns):[];
+  const athMap=athletesMap||{};
+  const catsWithData=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
+  const activeArr=activeRuns?Object.values(activeRuns).filter(r=>r?.athleteId):[];
+  useEffect(()=>{if(catsWithData.length<=1)return;const id=setInterval(()=>{setCatIdx(i=>(i+1)%catsWithData.length);setScrollOff(0);},15000);return()=>clearInterval(id);},[catsWithData.length]);
+  useEffect(()=>{const id=setInterval(()=>{setScrollOff(off=>{const cat=catsWithData[catIdx];if(!cat)return 0;const total=computeRanked(runList,cat.id).length-3;return total>0?(off+1)%total:0;});},3000);return()=>clearInterval(id);},[catIdx,catsWithData.length,runList.length]);
+  useEffect(()=>{let raf;const tick=()=>{setNowMs(Date.now());raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);},[]);
+  const medals=['🥇','🥈','🥉'];const medalColors=['#FFD60A','#C0C0C0','#CD7F32'];
+  const curCat=catsWithData[catIdx]||null;const ranked=curCat?computeRanked(runList,curCat.id):[];
+  const top3=ranked.slice(0,3);const visRest=ranked.slice(3).slice(scrollOff,scrollOff+4);
+  if(!info)return<div style={{background:'#000',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
+  return(
+    <div className="display-root">
+      <div style={{padding:'18px 24px 14px',borderBottom:'1px solid rgba(255,255,255,.07)',display:'flex',alignItems:'center',gap:16,background:'radial-gradient(ellipse at 50% -40%,rgba(255,94,58,.07) 0%,transparent 60%)'}}>
+        <div style={{width:40,height:40,borderRadius:11,background:'linear-gradient(135deg,#FF5E3A,#FF9040)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🥷</div>
+        <div style={{flex:1}}><div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>OG Ninja Comp</div><div style={{fontSize:21,fontWeight:900,letterSpacing:'-.5px',marginTop:1}}>{info.name}</div></div>
+        <div className="live-badge"><div className="live-dot"/>Live</div>
+      </div>
+      {activeArr.length>0&&(
+        <div style={{background:'rgba(255,94,58,.06)',borderBottom:'1px solid rgba(255,94,58,.14)',padding:'9px 24px',display:'flex',gap:20,overflowX:'auto'}}>
+          {activeArr.map((r,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+              <div className="live-dot"/>
+              <div style={{fontWeight:700,fontSize:14}}>{r.athleteName||'?'}</div>
+              <div style={{fontFamily:'JetBrains Mono',fontSize:15,fontWeight:700,color:'#FF5E3A'}}>{fmtMs(r.startEpoch?nowMs-r.startEpoch:0)}</div>
+              {r.doneCP?.length>0&&<div style={{fontSize:11,color:'rgba(255,255,255,.4)'}}>{r.doneCP.length} CPs</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {catsWithData.length>1&&(
+        <div style={{padding:'14px 24px 0',display:'flex',gap:7,overflowX:'auto'}}>
+          {catsWithData.map((c,i)=>(
+            <button key={c.id} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:700,border:'none',cursor:'pointer',flexShrink:0,background:i===catIdx?c.color:'rgba(255,255,255,.06)',color:i===catIdx?'#fff':'rgba(255,255,255,.4)',transition:'all .4s'}} onClick={()=>{setCatIdx(i);setScrollOff(0);}}>{catName(c)}</button>
+          ))}
+        </div>
+      )}
+      {!curCat&&<div style={{padding:'80px 24px',textAlign:'center'}}><div style={{fontSize:52,marginBottom:14}}>🥷</div><div style={{fontSize:18,color:'rgba(255,255,255,.35)'}}>{lang==='de'?'Noch keine Ergebnisse':'No results yet'}</div></div>}
+      {curCat&&(
+        <div style={{padding:'20px 24px 40px'}}>
+          <div style={{marginBottom:18}}><div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 16px',borderRadius:20,background:`${curCat.color}20`,border:`1px solid ${curCat.color}30`}}><div style={{width:8,height:8,borderRadius:'50%',background:curCat.color}}/><span style={{fontSize:14,fontWeight:700,color:curCat.color}}>{catName(curCat)}</span></div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
+            {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
+              <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:16,padding:'16px 20px',borderRadius:18,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
+                <div style={{fontSize:32,width:44,textAlign:'center'}}>{medals[i]}</div>
+                <div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div><div style={{fontSize:12,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num} · {r.doneCP?.length||0} CPs</div></div>
+                <div style={{fontFamily:'JetBrains Mono',fontSize:22,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
+              </div>
+            );})}
+          </div>
+          {visRest.length>0&&(
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+7,ranked.length)}</div>
+              {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
+                <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderRadius:10,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
+                  <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
+                  <div style={{flex:1,fontSize:15,fontWeight:600}}>{a.name}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.doneCP?.length||0} CPs</div>
+                  <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:'rgba(255,255,255,.6)'}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                </div>
+              );})}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// DISPLAY — NO COMP SELECTED
+// ════════════════════════════════════════════════════════════
+const DisplayNoComp=({onSelect})=>{
+  const comps=useFbVal('ogn');const list=comps?Object.entries(comps).map(([id,v])=>({id,...v})):[];
+  return(
+    <div style={{background:'#000',minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:24}}>
+      <div style={{fontSize:44}}>🥷</div><div style={{fontSize:20,fontWeight:900,color:'#fff'}}>OG Ninja Display</div>
+      <div style={{fontSize:13,color:'rgba(255,255,255,.4)',marginBottom:6}}>Wettkampf auswählen</div>
+      {list.length===0&&<Spinner/>}
+      {list.map(c=>(
+        <button key={c.id} style={{background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:12,padding:'12px 28px',color:'#fff',cursor:'pointer',fontSize:15,fontWeight:600,width:'100%',maxWidth:340}} onClick={()=>onSelect(c.id)}>
+          {c.info?.name||c.id} <span style={{opacity:.5,fontSize:12}}>{c.id}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════════
+// APP ROUTER
+// ════════════════════════════════════════════════════════════
+const App=()=>{
+  const params=new URLSearchParams(window.location.search);
+  const modeP=params.get('mode'),compP=params.get('comp'),stP=params.get('station');
+  const [lang,setLang]=useState(()=>storage.get('lang','de'));
+  const [compId,setCompId]=useState(compP||null);
+  const [view,setView]=useState(()=>{if(modeP==='display')return 'display';if(stP&&compP)return 'jury';if(compP)return 'coordinator';return 'home';});
+  useEffect(()=>storage.set('lang',lang),[lang]);
+  const stNum=stP?parseInt(stP,10):1;
+  const openComp=id=>{setCompId(id);setView('coordinator');};
+  return(
+    <LangCtx.Provider value={lang}>
+      {view==='home'&&<HomeView onOpen={openComp} lang={lang} setLang={setLang}/>}
+      {view==='coordinator'&&compId&&<CoordinatorView compId={compId} onBack={()=>{setView('home');setCompId(null);}} lang={lang} setLang={setLang}/>}
+      {view==='jury'&&compId&&<JuryApp compId={compId} stNum={stNum}/>}
+      {view==='display'&&compId&&<DisplayView compId={compId}/>}
+      {view==='display'&&!compId&&<DisplayNoComp onSelect={id=>setCompId(id)}/>}
+    </LangCtx.Provider>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+</script>
+</body>
+</html>
