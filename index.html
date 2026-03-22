@@ -481,8 +481,15 @@ const DragList=({items,onReorder,renderItem,keyFn})=>{
 };
 
 // ── RANKING UTIL ──────────────────────────────────────────
+// Best result per athlete across ALL stages (for overall view)
 const computeRanked=(runList,catId)=>{
   const cr=runList.filter(r=>r.catId===catId);const byA={};
+  cr.forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});
+  return Object.values(byA).sort((a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);});
+};
+// Best result per athlete for a SPECIFIC stage (Option B — per-stage leaderboard)
+const computeRankedStage=(runList,catId,stNum)=>{
+  const cr=runList.filter(r=>r.catId===catId&&r.stNum===stNum);const byA={};
   cr.forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});
   return Object.values(byA).sort((a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);});
 };
@@ -1728,11 +1735,17 @@ const ResultsView=({compId,athletes})=>{
   const {t,lang,catName}=useLang();
   const runs=useFbVal(`ogn/${compId}/completedRuns`);
   const [selCat,setSelCat]=useState(null);
+  const [selStage,setSelStage]=useState(null); // null = Gesamt (all), number = specific stage
   const runList=runs?Object.values(runs):[];
   const athMap=athletes||{};
   const catsWithRuns=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
   useEffect(()=>{if(!selCat&&catsWithRuns.length>0)setSelCat(catsWithRuns[0].id);},[catsWithRuns.length]);
-  const ranked=selCat?computeRanked(runList,selCat):[];
+  // Reset stage selection when category changes
+  useEffect(()=>{setSelStage(null);},[selCat]);
+  // Stage numbers that have runs for the selected category
+  const stageNums=selCat?[...new Set(runList.filter(r=>r.catId===selCat&&r.stNum!=null).map(r=>r.stNum))].sort((a,b)=>a-b):[];
+  const multiStage=stageNums.length>1;
+  const ranked=selCat?(selStage!=null?computeRankedStage(runList,selCat,selStage):computeRanked(runList,selCat)):[];
   const medals=['🥇','🥈','🥉'];
   const exportAll=(format='csv')=>{
     if(format==='csv'){
@@ -1769,13 +1782,29 @@ const ResultsView=({compId,athletes})=>{
             onClick={()=>{setSelCat(c.id);SFX.hover();}}>{c.name[lang]}</button>
         ))}
       </div>
+      {/* Stage selector — only shown when multiple stages have runs */}
+      {multiStage&&(
+        <div style={{overflowX:'auto',padding:'8px 16px',display:'flex',gap:6,borderBottom:'1px solid var(--border)',background:'rgba(255,255,255,.02)'}}>
+          <button className={`chip${selStage===null?' active':''}`} style={{flexShrink:0,fontSize:11,padding:'3px 12px'}}
+            onClick={()=>{setSelStage(null);SFX.hover();}}>
+            {lang==='de'?'Gesamt':'Overall'}
+          </button>
+          {stageNums.map(n=>(
+            <button key={n} className={`chip${selStage===n?' active':''}`}
+              style={{flexShrink:0,fontSize:11,padding:'3px 12px',...(selStage===n?{background:'rgba(255,94,58,.15)',borderColor:'rgba(255,94,58,.4)',color:'var(--cor)'}:{})}}
+              onClick={()=>{setSelStage(n);SFX.hover();}}>
+              Stage {n}
+            </button>
+          ))}
+        </div>
+      )}
       {catsWithRuns.length===0&&<EmptyState icon={<I.FileText s={28} c="rgba(255,255,255,.3)"/>} text={t('noRuns')}/>}
       {selCat&&ranked.length>0&&(()=>{
         return(
           <div className="section">
             {ranked[0]&&(()=>{const a=athMap[ranked[0].athleteId]||{name:ranked[0].athleteName||'?',num:'?'};return(
               <div className="winner-card">
-                <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10,fontWeight:600}}>🥇 Platz 1</div>
+                <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10,fontWeight:600}}>🥇 Platz 1{selStage!=null?` · Stage ${selStage}`:multiStage?` · ${lang==='de'?'Gesamt':'Overall'}`:''}</div>
                 <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
                   {a.photo?<img src={a.photo} style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,215,10,.4)',flexShrink:0}}/>:null}
                   <div>
@@ -2021,7 +2050,12 @@ const DisplayView=({compId,onBack})=>{
   useEffect(()=>{const id=setInterval(()=>{setScrollOff(off=>{const cat=catsWithData[catIdx];if(!cat)return 0;const total=computeRanked(runList,cat.id).length-3;return total>0?(off+1)%total:0;});},3000);return()=>clearInterval(id);},[catIdx,catsWithData.length,runList.length]);
   useEffect(()=>{let raf;const tick=()=>{setNowMs(Date.now());raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);},[]);
   const medals=['🥇','🥈','🥉'];const medalColors=['#FFD60A','#C0C0C0','#CD7F32'];
-  const curCat=catsWithData[catIdx]||null;const ranked=curCat?computeRanked(runList,curCat.id):[];
+  const curCat=catsWithData[catIdx]||null;
+  // Per-stage columns: find which stages have runs for current category
+  const dispStageNums=curCat?[...new Set(runList.filter(r=>r.catId===curCat.id&&r.stNum!=null).map(r=>r.stNum))].sort((a,b)=>a-b):[];
+  const multiDispStage=dispStageNums.length>1;
+  // For single-stage or overall, keep current scrolling behavior
+  const ranked=curCat?computeRanked(runList,curCat.id):[];
   const top3=ranked.slice(0,3);const visRest=ranked.slice(3).slice(scrollOff,scrollOff+4);
   if(!info)return<div style={{background:'#000',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
   const cols=activeArr.length>=2?2:1;
@@ -2143,34 +2177,76 @@ const DisplayView=({compId,onBack})=>{
       {curCat&&(
         <div style={{padding:'18px 20px 40px'}}>
           <div style={{marginBottom:16}}><div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 14px',borderRadius:20,background:`${curCat.color}20`,border:`1px solid ${curCat.color}30`}}><div style={{width:8,height:8,borderRadius:'50%',background:curCat.color}}/><span style={{fontSize:13,fontWeight:700,color:curCat.color}}>{catName(curCat)}</span></div></div>
-          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
-            {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-              <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 18px',borderRadius:16,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
-                {a.photo?<img src={a.photo} style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:`1px solid ${curCat.color}40`}}/>:<div style={{fontSize:28,width:40,textAlign:'center'}}>{medals[i]}</div>}
-                <div style={{flex:1}}>
-                  <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num} · {r.doneCP?.length||0} CPs{a.country&&` · ${a.country}`}</div>
-                </div>
-                <div style={{textAlign:'right'}}>
-                  {a.photo&&<div style={{fontSize:22,marginBottom:2}}>{medals[i]}</div>}
-                  <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
-                </div>
-              </div>
-            );})}
-          </div>
-          {visRest.length>0&&(
-            <div style={{display:'flex',flexDirection:'column',gap:5}}>
-              <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+7,ranked.length)}</div>
-              {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-                <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderRadius:10,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
-                  {a.photo?<img src={a.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
-                  <div style={{flex:1,fontSize:15,fontWeight:600}}>{a.name}</div>
-                  <div style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.doneCP?.length||0} CPs</div>
-                  <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:'rgba(255,255,255,.6)'}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
-                </div>
-              );})}
+
+          {/* ── Multi-stage: columns per stage ── */}
+          {multiDispStage?(
+            <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(dispStageNums.length,3)},1fr)`,gap:12}}>
+              {dispStageNums.map(stN=>{
+                const stRanked=computeRankedStage(runList,curCat.id,stN);
+                if(!stRanked.length)return null;
+                return(
+                  <div key={stN} style={{background:'var(--card)',borderRadius:16,border:'1px solid var(--border)',overflow:'hidden'}}>
+                    {/* Stage header */}
+                    <div style={{padding:'10px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:8,background:'rgba(255,255,255,.02)'}}>
+                      <div style={{width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,var(--cor),var(--cor2))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#fff',flexShrink:0}}>{stN}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.6)',letterSpacing:'.06em',textTransform:'uppercase'}}>Stage {stN}</div>
+                      <div style={{marginLeft:'auto',fontSize:10,color:'rgba(255,255,255,.3)',fontFamily:'JetBrains Mono'}}>{stRanked.length}</div>
+                    </div>
+                    {/* Rank rows */}
+                    <div style={{padding:'6px 0'}}>
+                      {stRanked.slice(0,6).map((r,i)=>{
+                        const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};
+                        return(
+                          <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 12px',borderBottom:i<Math.min(stRanked.length,6)-1?'1px solid rgba(255,255,255,.04)':'none'}}>
+                            <div style={{fontSize:11,fontWeight:800,color:i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.3)',width:18,textAlign:'center',flexShrink:0}}>{i+1}</div>
+                            {a.photo?<img src={a.photo} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:12,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
+                              <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{r.doneCP?.length||0} CPs{r.status==='complete'?<span style={{color:'var(--green)',marginLeft:4}}>✓</span>:r.fellAt?.name?<span style={{marginLeft:4,color:'rgba(255,255,255,.25)'}}>{r.fellAt.name.substring(0,12)}</span>:null}</div>
+                            </div>
+                            <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.5)',flexShrink:0}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                          </div>
+                        );
+                      })}
+                      {stRanked.length>6&&<div style={{padding:'6px 12px',fontSize:10,color:'rgba(255,255,255,.25)',textAlign:'center'}}>+{stRanked.length-6} {lang==='de'?'weitere':'more'}</div>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          ):(
+            /* ── Single stage: original full-ranking view ── */
+            <>
+              <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
+                {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
+                  <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 18px',borderRadius:16,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
+                    {a.photo?<img src={a.photo} style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:`1px solid ${curCat.color}40`}}/>:<div style={{fontSize:28,width:40,textAlign:'center'}}>{medals[i]}</div>}
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div>
+                      <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num} · {r.doneCP?.length||0} CPs{a.country&&` · ${a.country}`}</div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      {a.photo&&<div style={{fontSize:22,marginBottom:2}}>{medals[i]}</div>}
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                    </div>
+                  </div>
+                );})}
+              </div>
+              {visRest.length>0&&(
+                <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                  <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+7,ranked.length)}</div>
+                  {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
+                    <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderRadius:10,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
+                      <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
+                      {a.photo?<img src={a.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
+                      <div style={{flex:1,fontSize:15,fontWeight:600}}>{a.name}</div>
+                      <div style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.doneCP?.length||0} CPs</div>
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:'rgba(255,255,255,.6)'}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                    </div>
+                  );})}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
