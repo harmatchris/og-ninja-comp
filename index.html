@@ -1666,7 +1666,7 @@ const JuryApp=({compId,stNum,onBack})=>{
 // ════════════════════════════════════════════════════════════
 // DISPLAY VIEW
 // ════════════════════════════════════════════════════════════
-const DisplayView=({compId})=>{
+const DisplayView=({compId,onBack})=>{
   const {lang,catName,t}=useLang();
   const info=useFbVal(`ogn/${compId}/info`);
   const athletesMap=useFbVal(`ogn/${compId}/athletes`);
@@ -1687,6 +1687,13 @@ const DisplayView=({compId})=>{
   return(
     <div className="display-root">
       <div style={{padding:'18px 24px 14px',borderBottom:'1px solid rgba(255,255,255,.07)',display:'flex',alignItems:'center',gap:16,background:'radial-gradient(ellipse at 50% -40%,rgba(255,94,58,.07) 0%,transparent 60%)'}}>
+        {onBack&&(
+          <button onClick={onBack} style={{background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:10,padding:'7px 10px',cursor:'pointer',color:'rgba(255,255,255,.55)',display:'flex',alignItems:'center',gap:5,fontSize:12,fontWeight:600,flexShrink:0,transition:'background .15s,color .15s'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.12)';e.currentTarget.style.color='#fff';}}
+            onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.06)';e.currentTarget.style.color='rgba(255,255,255,.55)';}}>
+            <I.ChevL s={16}/>{lang==='de'?'Jury':'Jury'}
+          </button>
+        )}
         <div style={{width:40,height:40,borderRadius:11,background:'linear-gradient(135deg,#FF5E3A,#FF9040)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🥷</div>
         <div style={{flex:1}}><div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>OG Ninja Comp</div><div style={{fontSize:21,fontWeight:900,letterSpacing:'-.5px',marginTop:1}}>{info.name}</div></div>
         <div className="live-badge"><div className="live-dot"/>Live</div>
@@ -1862,8 +1869,8 @@ const App=()=>{
       {view==='home'&&<HomeView onOpen={openComp} lang={lang} setLang={setLang}/>}
       {view==='coordinator'&&compId&&<CoordinatorView compId={compId} onBack={()=>{setView('home');setCompId(null);}} onStage={openStage} lang={lang} setLang={setLang}/>}
       {view==='jury'&&compId&&<JuryApp compId={compId} stNum={stNum} onBack={()=>setView('coordinator')}/>}
-      {view==='display'&&compId&&<DisplayView compId={compId}/>}
-      {view==='display'&&!compId&&<DisplayNoComp onSelect={id=>setCompId(id)}/>}
+      {view==='display'&&compId&&<DisplayView compId={compId} onBack={()=>setView('coordinator')}/>}
+      {view==='display'&&!compId&&<DisplayNoComp onSelect={id=>{setCompId(id);setView('display');}}/>}
       {/* Install prompt — only shows on mobile, dismissable, "not again" saves to localStorage */}
       <InstallPrompt lang={lang}/>
     </LangCtx.Provider>
