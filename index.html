@@ -542,7 +542,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   const [obsStage,setObsStage]=useState(0);// which stage tab is active for obstacles
   const [athStage,setAthStage]=useState(0);// which stage tab is active for athletes
   const [newObs,setNewObs]=useState('');
-  const [newAth,setNewAth]=useState({name:'',num:'1',cat:'am1',stageNum:1});
+  const [newAth,setNewAth]=useState({name:'',num:'1',cat:'am1',gender:'m',stageNum:1});
   const [saving,setSaving]=useState(false);
   const [csvError,setCsvError]=useState('');
   const sI=(k,v)=>setInfo(i=>({...i,[k]:v}));
@@ -583,23 +583,45 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   };
 
   // CSV Import
+  const normalizeGender=raw=>{
+    const g=(raw||'').trim().toLowerCase();
+    if(['m','male','männlich','maennlich','man'].includes(g))return 'm';
+    if(['w','f','female','weiblich','frau','woman'].includes(g))return 'w';
+    if(['d','div','diverse','divers','non-binary','nb','x'].includes(g))return 'd';
+    return 'm'; // default
+  };
   const importCSV=(si,text)=>{
     setCsvError('');
     const lines=text.trim().split(/\r?\n/).filter(l=>l.trim());
+    // Skip header row if it looks like a header
+    const start=(lines[0]&&isNaN(lines[0].split(/[,;\t]/)[0].trim())&&!lines[0].split(/[,;\t]/)[0].trim().match(/^\d/))?1:0;
     const results=[];
-    for(const line of lines){
+    for(const line of lines.slice(start)){
       const parts=line.split(/[,;\t]/).map(s=>s.trim().replace(/^["']|["']$/g,''));
       if(parts.length<2){setCsvError(`Ungültige Zeile: ${line}`);return;}
-      const [num,name,...rest]=parts;
-      const catRaw=(rest[0]||'').toLowerCase();
-      // Try to match category
-      const cat=IGN_CATS.find(c=>c.id===catRaw||c.name.de.toLowerCase().includes(catRaw)||c.name.en.toLowerCase().includes(catRaw))||IGN_CATS[9]; // default Adults M LK1
-      results.push({id:uid(),num:num||String(results.length+1),name,cat:cat.id,stageNum:si+1});
+      const [num,name,catRaw='',genderRaw='']=parts;
+      const catLow=catRaw.toLowerCase();
+      const cat=IGN_CATS.find(c=>c.id===catLow||c.name.de.toLowerCase().includes(catLow)||c.name.en.toLowerCase().includes(catLow))||IGN_CATS[9];
+      const gender=normalizeGender(genderRaw);
+      results.push({id:uid(),num:num||String(results.length+1),name,cat:cat.id,gender,stageNum:si+1});
     }
     if(results.length===0){setCsvError('Keine Athleten gefunden');return;}
     setStageAths(a=>{const n=[...a];n[si]=[...n[si],...results];return n;});
     SFX.complete();
     alert(`✅ ${results.length} Athleten importiert`);
+  };
+  const downloadCsvTemplate=()=>{
+    const rows=[
+      'Startnr,Name,Kategorie-ID,Geschlecht',
+      '1,Max Muster,am1,M',
+      '2,Laura Beispiel,aw1,W',
+      '3,Robin Test,am2,D',
+      '4,Anna Sample,jm1,W',
+    ];
+    const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='athleten-vorlage.csv';a.click();URL.revokeObjectURL(url);
+    SFX.click();
   };
   const handleFileImport=(si,file)=>{
     if(!file)return;
@@ -616,7 +638,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           const rows=XLSX.utils.sheet_to_json(ws,{header:1});
           // Skip header row if first cell looks like a header
           const start=(rows[0]&&typeof rows[0][0]==='string'&&isNaN(rows[0][0]))?1:0;
-          const csvLines=rows.slice(start).map(r=>`${r[0]||''},${r[1]||''},${r[2]||''}`).join('\n');
+          const csvLines=rows.slice(start).map(r=>`${r[0]||''},${r[1]||''},${r[2]||''},${r[3]||''}`).join('\n');
           importCSV(si,csvLines);
         }catch{
           // Fallback: try as text
@@ -764,11 +786,12 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
                 📥 CSV
                 <input type="file" accept=".csv,.txt,.xlsx,.xls" style={{display:'none'}} onChange={e=>{if(e.target.files[0])handleFileImport(asi,e.target.files[0]);e.target.value='';}}/>
               </label>
+              <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11,gap:5}} onClick={downloadCsvTemplate}>📄 {lang==='de'?'Vorlage':'Template'}</button>
             </div>
           </div>
           {csvError&&<div style={{fontSize:12,color:'var(--red)',background:'rgba(255,59,48,.08)',borderRadius:8,padding:'7px 12px'}}>⚠️ {csvError}</div>}
           <div style={{fontSize:11,color:'var(--muted)',background:'rgba(255,255,255,.03)',borderRadius:8,padding:'7px 12px'}}>
-            📋 CSV-Format: <code style={{fontSize:10,color:'var(--cor)'}}>Startnr, Name, Kategorie-ID</code> (z.B. <code style={{fontSize:10}}>1, Max Muster, am1</code>)
+            📋 CSV-Format: <code style={{fontSize:10,color:'var(--cor)'}}>Startnr, Name, Kategorie-ID, Geschlecht</code> — {lang==='de'?'Geschlecht: M/W/D (optional)':'Gender: M/W/D (optional)'}
           </div>
           <div style={{maxHeight:230,overflowY:'auto'}}>
             {curAths.length===0?<EmptyState icon="👤" text="Noch keine Athleten"/>:
@@ -793,6 +816,12 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
             <select value={newAth.cat} onChange={e=>setNewAth(a=>({...a,cat:e.target.value}))}>
               {IGN_CATS.map(c=><option key={c.id} value={c.id}>{c.name[lang]||c.name.de}</option>)}
             </select>
+            <div style={{display:'flex',gap:6}}>
+              {[['m',lang==='de'?'M (Männlich)':'M (Male)'],['w',lang==='de'?'W (Weiblich)':'W (Female)'],['d',lang==='de'?'D (Divers)':'D (Non-binary)']].map(([v,lbl])=>(
+                <button key={v} className={`chip${newAth.gender===v?' active':''}`} style={{flex:1,justifyContent:'center',fontSize:11}}
+                  onClick={()=>setNewAth(a=>({...a,gender:v}))}>{lbl}</button>
+              ))}
+            </div>
             <button className="btn btn-coral" style={{padding:10,gap:6}} onClick={addAth}><I.Plus s={15}/> {t('addAth')}</button>
           </div>
         </div>
@@ -1258,7 +1287,7 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,activeFalls,startPe
 // ════════════════════════════════════════════════════════════
 // JURY — FALL MODAL  (timer keeps running behind this overlay)
 // ════════════════════════════════════════════════════════════
-const FallModal=({athlete,doneCP,cpObst,currentTime,mode,lives,onConfirm,onUseLive,onCancel})=>{
+const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConfirm,onUseLive,onCancel})=>{
   const {t,lang}=useLang();
   const [selCount,setSelCount]=useState(doneCP.length);
   const hasLives=mode==='lives'||mode==='segliv';
@@ -1273,6 +1302,12 @@ const FallModal=({athlete,doneCP,cpObst,currentTime,mode,lives,onConfirm,onUseLi
     return ct!=null?ct:currentTime;
   };
   const officialTime=getTime(selCount);
+  // Obstacle selector: show all obstacles after last confirmed CP
+  const lastCpOrder=selCount>0?(cpObst[selCount-1]?.order??-1):-1;
+  const candidateObst=obstArr.filter(o=>o.order>lastCpOrder);
+  const [fellAtObstId,setFellAtObstId]=useState(()=>candidateObst[0]?.id??null);
+  useEffect(()=>{setFellAtObstId(candidateObst[0]?.id??null);},[selCount]);
+  const fellAtObst=obstArr.find(o=>o.id===fellAtObstId)||null;
   return(
     <div className="modal-overlay">
       <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
@@ -1311,6 +1346,23 @@ const FallModal=({athlete,doneCP,cpObst,currentTime,mode,lives,onConfirm,onUseLi
               );
             })}
           </div>
+          {obstArr.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div className="lbl" style={{marginBottom:7}}>{lang==='de'?'Gefallen bei Hindernis:':'Fell at obstacle:'}</div>
+              {candidateObst.length===0
+                ?<div style={{fontSize:12,color:'var(--dim)',padding:'4px 0'}}>—</div>
+                :<div style={{display:'flex',gap:5,overflowX:'auto',paddingBottom:2}}>
+                  {candidateObst.map(o=>(
+                    <button key={o.id} className={`chip${fellAtObstId===o.id?' active':''}`}
+                      style={{flexShrink:0,fontSize:12,padding:'5px 11px',justifyContent:'center'}}
+                      onClick={()=>setFellAtObstId(o.id)}>
+                      {o.name}
+                    </button>
+                  ))}
+                </div>
+              }
+            </div>
+          )}
           <div className="lbl" style={{marginBottom:4}}>{t('officialTime')}</div>
           <div className="timer-grad" style={{fontSize:32}}>{fmtMs(officialTime)}</div>
         </div>
@@ -1322,7 +1374,7 @@ const FallModal=({athlete,doneCP,cpObst,currentTime,mode,lives,onConfirm,onUseLi
         )}
         <button className="btn" style={{width:'100%',padding:13,marginBottom:8,gap:8,
           background:'rgba(255,59,48,.1)',color:'var(--red)',border:'1px solid rgba(255,59,48,.2)'}}
-          onClick={()=>onConfirm({selCount,time:officialTime})}>
+          onClick={()=>onConfirm({selCount,time:officialTime,fellAtObst})}>
           <I.Check s={15}/> {lang==='de'?'Fall bestätigen (DNF)':'Confirm fall (DNF)'}
         </button>
         <button className="btn btn-ghost" style={{width:'100%',padding:12}} onClick={onCancel}>
@@ -1336,7 +1388,7 @@ const FallModal=({athlete,doneCP,cpObst,currentTime,mode,lives,onConfirm,onUseLi
 // ════════════════════════════════════════════════════════════
 // JURY — STOP MODAL (timer keeps running behind overlay)
 // ════════════════════════════════════════════════════════════
-const StopModal=({athlete,doneCP,cpObst,time,reason,onConfirm,onCancel})=>{
+const StopModal=({athlete,doneCP,cpObst,obstArr=[],time,reason,onConfirm,onCancel})=>{
   const {lang}=useLang();
   const [selCount,setSelCount]=useState(doneCP.length);
   const isTimeout=reason==='timeout';
@@ -1346,6 +1398,12 @@ const StopModal=({athlete,doneCP,cpObst,time,reason,onConfirm,onCancel})=>{
     const ct=doneCP[selCount-1]?.time;
     return ct!=null?ct:time;
   };
+  // Obstacle selector: obstacles after last confirmed CP
+  const lastCpOrder=selCount>0?(cpObst[selCount-1]?.order??-1):-1;
+  const candidateObst=obstArr.filter(o=>o.order>lastCpOrder);
+  const [fellAtObstId,setFellAtObstId]=useState(()=>candidateObst[0]?.id??null);
+  useEffect(()=>{setFellAtObstId(candidateObst[0]?.id??null);},[selCount]);
+  const fellAtObst=obstArr.find(o=>o.id===fellAtObstId)||null;
   return(
     <div className="modal-overlay">
       <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
@@ -1383,6 +1441,23 @@ const StopModal=({athlete,doneCP,cpObst,time,reason,onConfirm,onCancel})=>{
               );
             })}
           </div>
+          {obstArr.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div className="lbl" style={{marginBottom:7}}>{lang==='de'?'Weitest erreichtes Hindernis:':'Furthest obstacle reached:'}</div>
+              {candidateObst.length===0
+                ?<div style={{fontSize:12,color:'var(--dim)',padding:'4px 0'}}>—</div>
+                :<div style={{display:'flex',gap:5,overflowX:'auto',paddingBottom:2}}>
+                  {candidateObst.map(o=>(
+                    <button key={o.id} className={`chip${fellAtObstId===o.id?' active':''}`}
+                      style={{flexShrink:0,fontSize:12,padding:'5px 11px',justifyContent:'center'}}
+                      onClick={()=>setFellAtObstId(o.id)}>
+                      {o.name}
+                    </button>
+                  ))}
+                </div>
+              }
+            </div>
+          )}
           <div className="lbl" style={{marginBottom:4}}>{lang==='de'?'Offizielle Zeit':'Official time'}</div>
           <div className="timer-grad" style={{fontSize:32}}>{fmtMs(getSelTime())}</div>
         </div>
@@ -1390,7 +1465,7 @@ const StopModal=({athlete,doneCP,cpObst,time,reason,onConfirm,onCancel})=>{
           {lang==='de'?'Checkpoint korrigieren falls Jury-Fehler passiert ist.':'Adjust checkpoint if jury error occurred.'}
         </div>
         <button className="btn btn-coral" style={{width:'100%',padding:13,gap:8,marginBottom:8}}
-          onClick={()=>onConfirm({selCount,time:getSelTime()})}>
+          onClick={()=>onConfirm({selCount,time:getSelTime(),fellAtObst})}>
           <I.Check s={15}/> {lang==='de'?'Bestätigen & speichern':'Confirm & save'}
         </button>
         <button className="btn btn-ghost" style={{width:'100%',padding:12}} onClick={onCancel}>
@@ -1552,15 +1627,27 @@ const ResultsView=({compId,athletes})=>{
               <div className="winner-card">
                 <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8,fontWeight:600}}>🥇 Platz 1</div>
                 <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8,fontSize:14}}>🚩</span>}</div>
-                <div className="timer-grad" style={{fontSize:28,marginTop:6}}>{fmtMs(ranked[0].finalTime)}</div>
+                <div className="timer-grad" style={{fontSize:28,marginTop:6}}>{ranked[0].status==='complete'?fmtMs(ranked[0].finalTime):(lang==='de'?'DNF':'DNF')}</div>
                 <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{ranked[0].doneCP?.length||0} / {ranked[0].totalCPs||'?'} CPs · #{a.num}</div>
+                {ranked[0].status==='complete'
+                  ?<div style={{fontSize:11,color:'var(--green)',marginTop:3}}>✓ {lang==='de'?'Ziel erreicht':'Finished'}</div>
+                  :ranked[0].fellAt?.name&&<div style={{fontSize:11,color:'var(--muted)',marginTop:3}}>↩ {ranked[0].fellAt.name}</div>
+                }
               </div>
             );})()} 
             {ranked.slice(1).map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
               <div key={r.athleteId} className="sh-card fade-up" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
                 <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'var(--muted)'}}>{i<2?medals[i+1]:i+2}</div>
-                <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14}}>{a.name}{r.protested&&<span style={{marginLeft:6,fontSize:11}}>🚩</span>}</div><div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>#{a.num} · {r.doneCP?.length||0} CPs</div></div>
-                <div className="timer-grad" style={{fontSize:15}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:14}}>{a.name}{r.protested&&<span style={{marginLeft:6,fontSize:11}}>🚩</span>}</div>
+                  <div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>#{a.num} · {r.doneCP?.length||0} CPs
+                    {r.status==='complete'
+                      ?<span style={{color:'var(--green)',marginLeft:6}}>✓ {lang==='de'?'Ziel':'Finish'}</span>
+                      :r.fellAt?.name&&<span style={{marginLeft:6}}>· ↩ {r.fellAt.name}</span>
+                    }
+                  </div>
+                </div>
+                <div className="timer-grad" style={{fontSize:15}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
               </div>
             );})}
             <div style={{display:'flex',gap:8}}>
@@ -1666,15 +1753,15 @@ const JuryApp=({compId,stNum,onBack})=>{
     setLives(l=>l-1);
   };
   // Confirm DNF
-  const handleFallConfirm=async({selCount,time})=>{
+  const handleFallConfirm=async({selCount,time,fellAtObst})=>{
     const corrected=(fallModal.doneCP||[]).slice(0,selCount);
     const finalFalls=[...activeFalls,{obsIdx:fallModal.pendingFallIdx,time:fallModal.currentTime}];
-    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:corrected,totalCPs:cpObst.length,finalTime:time,lives,falls:finalFalls,protested:fallModal.protested||false,status:'fall',timestamp:Date.now()};
+    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:corrected,totalCPs:cpObst.length,finalTime:time,lives,falls:finalFalls,protested:fallModal.protested||false,status:'fall',fellAt:fellAtObst?{id:fellAtObst.id,name:fellAtObst.name,order:fellAtObst.order}:null,timestamp:Date.now()};
     await fbSet(`ogn/${compId}/completedRuns/${uid()}`,result);setFallModal(null);setDoneResult(result);setPhase('done');SFX.complete();
   };
-  const handleStopConfirm=async({selCount,time})=>{
+  const handleStopConfirm=async({selCount,time,fellAtObst})=>{
     const corrected=(stopModal.doneCP||[]).slice(0,selCount);
-    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:corrected,totalCPs:cpObst.length,finalTime:time,lives,falls:activeFalls,protested:stopModal.protested||false,status:stopModal.reason||'dnf',timestamp:Date.now()};
+    const result={athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat,stNum,mode:info.mode,doneCP:corrected,totalCPs:cpObst.length,finalTime:time,lives,falls:activeFalls,protested:stopModal.protested||false,status:stopModal.reason||'dnf',fellAt:fellAtObst?{id:fellAtObst.id,name:fellAtObst.name,order:fellAtObst.order}:null,timestamp:Date.now()};
     await fbSet(`ogn/${compId}/completedRuns/${uid()}`,result);setStopModal(null);setDoneResult(result);setPhase('done');SFX.complete();
   };
   const handleComplete=async data=>{
@@ -1709,14 +1796,14 @@ const JuryApp=({compId,stNum,onBack})=>{
         </nav>
       )}
       {fallModal&&phase==='active'&&(
-        <FallModal athlete={currentAth} doneCP={fallModal.doneCP} cpObst={cpObst} currentTime={fallModal.currentTime}
+        <FallModal athlete={currentAth} doneCP={fallModal.doneCP} cpObst={cpObst} obstArr={obstArr} currentTime={fallModal.currentTime}
           mode={info.mode} lives={lives}
           onConfirm={handleFallConfirm}
           onUseLive={(info.mode==='lives'||info.mode==='segliv')&&lives>1?handleUseLive:null}
           onCancel={handleFallCancel}/>
       )}
       {stopModal&&phase==='active'&&(
-        <StopModal athlete={currentAth} doneCP={stopModal.doneCP||[]} cpObst={cpObst} time={stopModal.time} reason={stopModal.reason}
+        <StopModal athlete={currentAth} doneCP={stopModal.doneCP||[]} cpObst={cpObst} obstArr={obstArr} time={stopModal.time} reason={stopModal.reason}
           onConfirm={handleStopConfirm} onCancel={handleStopCancel}/>
       )}
     </div>
