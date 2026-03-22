@@ -376,6 +376,18 @@ const I={
   Trash:({s=14,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
   Play:({s=15,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill={c}><polygon points="5 3 19 12 5 21 5 3"/></svg>,
   Users:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Camera:({s=18,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  User:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  Award:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>,
+  Target:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  AlertCircle:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  RefreshCw:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+  FileText:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  Upload:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  Share2:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  XCircle:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+  CheckCircle:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  ArrowLeft:({s=16,c='currentColor'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
 };
 
 // ── HOOKS ─────────────────────────────────────────────────
@@ -813,10 +825,10 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
             <div style={{display:'flex',gap:8,alignItems:'center'}}>
               <div style={{fontSize:11,color:'var(--muted)'}}>{t('sortHint')}</div>
               <label className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11,cursor:'pointer',gap:5}}>
-                📥 CSV
+                <I.Upload s={12}/> CSV
                 <input type="file" accept=".csv,.txt,.xlsx,.xls" style={{display:'none'}} onChange={e=>{if(e.target.files[0])handleFileImport(asi,e.target.files[0]);e.target.value='';}}/>
               </label>
-              <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11,gap:5}} onClick={downloadCsvTemplate}>📄 {lang==='de'?'Vorlage':'Template'}</button>
+              <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11,gap:5}} onClick={downloadCsvTemplate}><I.FileText s={12}/> {lang==='de'?'Vorlage':'Template'}</button>
             </div>
           </div>
           {csvError&&<div style={{fontSize:12,color:'var(--red)',background:'rgba(255,59,48,.08)',borderRadius:8,padding:'7px 12px'}}>⚠️ {csvError}</div>}
@@ -824,13 +836,13 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
             📋 CSV-Format: <code style={{fontSize:10,color:'var(--cor)'}}>Startnr, Name, Kategorie-ID, Geschlecht, Land, Team</code> — {lang==='de'?'Land/Team optional':'Country/Team optional'}
           </div>
           <div style={{maxHeight:230,overflowY:'auto'}}>
-            {curAths.length===0?<EmptyState icon="👤" text="Noch keine Athleten"/>:
+            {curAths.length===0?<EmptyState icon={<I.User s={28} c="rgba(255,255,255,.3)"/>} text="Noch keine Athleten"/>:
               <DragList items={curAths} onReorder={arr=>reorderAth(asi,arr)} keyFn={a=>a.id}
                 renderItem={(a,i)=>{const cat=IGN_CATS.find(c=>c.id===a.cat);return(
                   <div style={{padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
                     <div className="drag-handle"><I.Drag s={15}/></div>
                     <div style={{fontSize:11,color:'var(--cor)',minWidth:16,fontWeight:700}}>{i+1}</div>
-                    {a.photo?<img src={a.photo} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,flexShrink:0}}>👤</div>}
+                    {a.photo?<img src={a.photo} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><I.User s={13} c="rgba(255,255,255,.35)"/></div>}
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:13,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
                       {(a.country||a.team)&&<div style={{fontSize:10,color:'var(--muted)'}}>{[a.country,a.team].filter(Boolean).join(' · ')}</div>}
@@ -863,7 +875,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
             <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',padding:'7px 10px',background:'rgba(255,255,255,.03)',borderRadius:10,border:'1px solid var(--border)'}}>
               {newAth.photo
                 ?<><img src={newAth.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/><span style={{fontSize:12,flex:1}}>{lang==='de'?'Foto ändern ✓':'Change photo ✓'}</span><button style={{background:'rgba(255,59,48,.15)',border:'none',borderRadius:6,padding:'2px 8px',color:'var(--red)',fontSize:11,cursor:'pointer'}} onClick={e=>{e.preventDefault();setNewAth(a=>({...a,photo:null}));}}>{lang==='de'?'Löschen':'Remove'}</button></>
-                :<><span style={{fontSize:18}}>📷</span><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto hinzufügen (optional)':'Add photo (optional)'}</span></>
+                :<><I.Camera s={17} c="var(--muted)"/><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto hinzufügen (optional)':'Add photo (optional)'}</span></>
               }
               <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>{if(e.target.files[0])resizePhoto(e.target.files[0],b64=>setNewAth(a=>({...a,photo:b64})));e.target.value='';}}/>
             </label>
@@ -1020,7 +1032,7 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
           <button className="btn btn-ghost" style={{padding:'12px 14px',gap:7,color:'rgba(255,150,80,.8)',borderColor:'rgba(255,120,50,.2)'}}
             title={lang==='de'?'Wettkampf neu starten':'Restart competition'}
             onClick={handleRestart}>
-            🔄 {lang==='de'?'Restart':'Restart'}
+            <I.RefreshCw s={14} c="rgba(255,150,80,.8)"/> {lang==='de'?'Restart':'Restart'}
           </button>
         </div>
         <div className="sep"/>
@@ -1046,7 +1058,7 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
                     :<div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>Kategorie wählen → Stage starten</div>}
                 </div>
                 <button className="btn btn-ghost" style={{padding:'7px'}} onClick={()=>setShowQR(showQR===n?null:n)}><I.QR s={15}/></button>
-                {st.cat&&<button className="btn btn-ghost" style={{padding:'7px',color:'rgba(255,120,60,.7)',borderColor:'rgba(255,100,40,.2)'}} title={lang==='de'?`Stage ${n} zurücksetzen (PIN)`:`Reset Stage ${n} (PIN)`} onClick={()=>handleStageReset(n,st.cat)}>🔄</button>}
+                {st.cat&&<button className="btn btn-ghost" style={{padding:'7px',color:'rgba(255,120,60,.7)',borderColor:'rgba(255,100,40,.2)'}} title={lang==='de'?`Stage ${n} zurücksetzen (PIN)`:`Reset Stage ${n} (PIN)`} onClick={()=>handleStageReset(n,st.cat)}><I.RefreshCw s={14} c="rgba(255,120,60,.7)"/></button>}
               </div>
               {/* QR panel */}
               {showQR===n&&(
@@ -1105,7 +1117,7 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
             <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',padding:'7px 10px',background:'rgba(255,255,255,.03)',borderRadius:10,border:'1px solid var(--border)'}}>
               {quickAth.photo
                 ?<><img src={quickAth.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/><span style={{fontSize:12,flex:1}}>{lang==='de'?'Foto ändern ✓':'Change photo ✓'}</span><button style={{background:'rgba(255,59,48,.15)',border:'none',borderRadius:6,padding:'2px 8px',color:'var(--red)',fontSize:11,cursor:'pointer'}} onClick={e=>{e.preventDefault();setQuickAth(a=>({...a,photo:null}));}}>{lang==='de'?'Löschen':'Remove'}</button></>
-                :<><span style={{fontSize:18}}>📷</span><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto (optional)':'Photo (optional)'}</span></>
+                :<><I.Camera s={17} c="var(--muted)"/><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto (optional)':'Photo (optional)'}</span></>
               }
               <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>{if(e.target.files[0])resizePhotoUtil(e.target.files[0],b64=>setQuickAth(a=>({...a,photo:b64})));e.target.value='';}}/>
             </label>
@@ -1157,7 +1169,7 @@ const JuryWait=({cat,queue,obstacles,onStart,compId})=>{
   return(
     <div style={{display:'flex',flexDirection:'column',gap:0}}>
       {cat&&<div style={{padding:'14px 16px 0',display:'flex',justifyContent:'center'}}><div className="live-badge"><div className="live-dot"/>{catName(cat)}</div></div>}
-      {!next&&<EmptyState icon="✅" text={t('allDone')}/>}
+      {!next&&<EmptyState icon={<I.CheckCircle s={28} c="var(--green)"/>} text={t('allDone')}/>}
       {next&&(
         <div className="section" style={{gap:10}}>
           {/* Next athlete hero card */}
@@ -1175,19 +1187,20 @@ const JuryWait=({cat,queue,obstacles,onStart,compId})=>{
               <I.Play s={16}/> {t('startCountdown')}
             </button>
           </div>
-          {/* Queue drag-reorder */}
+          {/* Queue drag-reorder — ALL positions including #1 */}
           {effectiveQ.length>1&&(
             <div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                 <div className="lbl">Startreihenfolge</div>
                 <div style={{fontSize:10,color:'var(--muted)'}}>{t('sortHint')}</div>
               </div>
-              <DragList items={effectiveQ.slice(1)} onReorder={arr=>reorderQ([effectiveQ[0],...arr])} keyFn={a=>a.id}
+              <DragList items={effectiveQ} onReorder={arr=>reorderQ(arr)} keyFn={a=>a.id}
                 renderItem={(a,i)=>(
-                  <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:8,background:i===0?'rgba(52,199,89,.04)':'transparent',borderRadius:i===0?10:0}}>
                     <div className="drag-handle"><I.Drag s={15}/></div>
-                    <div style={{fontSize:11,color:'var(--cor)',minWidth:16,fontWeight:700}}>{i+2}</div>
+                    <div style={{fontSize:11,color:i===0?'var(--green)':'var(--cor)',minWidth:20,fontWeight:800,fontFamily:'JetBrains Mono'}}>{i+1}</div>
                     <div style={{flex:1,fontSize:13,fontWeight:600}}>{a.name}</div>
+                    {i===0&&<div style={{fontSize:9,padding:'2px 7px',borderRadius:6,background:'rgba(52,199,89,.15)',color:'var(--green)',fontWeight:800,border:'1px solid rgba(52,199,89,.3)',letterSpacing:'.05em'}}>NEXT</div>}
                     <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>#{a.num}</div>
                   </div>
                 )}/>
@@ -1398,7 +1411,7 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,activeFalls,startPe
           <button className="btn btn-ghost" style={{width:'100%',padding:10,fontSize:12,gap:6,
             ...(protested?{background:'rgba(255,200,0,.12)',color:'var(--gold)',borderColor:'rgba(255,200,0,.35)'}:{})}}
             onClick={()=>{setProtested(p=>!p);SFX.hover();}}>
-            🚩 {protested
+            <I.Flag s={13} c={protested?'var(--gold)':'currentColor'}/> {protested
               ?(lang==='de'?'Reklamation gesetzt – nochmal drücken zum aufheben':'Protest marked – tap to remove')
               :(lang==='de'?'Reklamation markieren':'Mark protest')}
           </button>
@@ -1636,7 +1649,7 @@ const JuryDone=({athlete,result,cat,onNext})=>{
         <div style={{display:'flex',justifyContent:'space-between'}}><div className="lbl">Status</div><div style={{fontWeight:700,color:statusColor}}>{statusLabel}</div></div>
         {result.protested&&(
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0 0',borderTop:'1px solid var(--border)',marginTop:4}}>
-            <div className="lbl">🚩 {lang==='de'?'Reklamation':'Protest'}</div>
+            <div className="lbl" style={{display:'flex',alignItems:'center',gap:6}}><I.Flag s={14} c="var(--gold)"/> {lang==='de'?'Reklamation':'Protest'}</div>
             <div style={{fontSize:12,color:'var(--gold)',fontWeight:700}}>{lang==='de'?'Markiert – bitte prüfen':'Marked – please review'}</div>
           </div>
         )}
@@ -1756,7 +1769,7 @@ const ResultsView=({compId,athletes})=>{
             onClick={()=>{setSelCat(c.id);SFX.hover();}}>{c.name[lang]}</button>
         ))}
       </div>
-      {catsWithRuns.length===0&&<EmptyState icon="📋" text={t('noRuns')}/>}
+      {catsWithRuns.length===0&&<EmptyState icon={<I.FileText s={28} c="rgba(255,255,255,.3)"/>} text={t('noRuns')}/>}
       {selCat&&ranked.length>0&&(()=>{
         return(
           <div className="section">
@@ -1766,16 +1779,16 @@ const ResultsView=({compId,athletes})=>{
                 <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
                   {a.photo?<img src={a.photo} style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,215,10,.4)',flexShrink:0}}/>:null}
                   <div>
-                    <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8,fontSize:14}}>🚩</span>}</div>
+                    <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8}}><I.Flag s={13} c="var(--gold)"/></span>}</div>
                     <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>#{a.num}{a.team&&<span style={{marginLeft:6,color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{a.country}</span>}</div>
                   </div>
                 </div>
                 <div className="timer-grad" style={{fontSize:28,marginTop:2}}>{ranked[0].status==='complete'?fmtMs(ranked[0].finalTime):'DNF'}</div>
                 <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{ranked[0].doneCP?.length||0} / {ranked[0].totalCPs||'?'} CPs</div>
                 {ranked[0].status==='complete'
-                  ?<div style={{fontSize:12,color:'var(--green)',marginTop:4,fontWeight:700}}>🎯 Buzzer ✓</div>
+                  ?<div style={{fontSize:12,color:'var(--green)',marginTop:4,fontWeight:700,display:'flex',alignItems:'center',gap:5}}><I.Target s={13} c="var(--green)"/> Buzzer</div>
                   :ranked[0].fellAt?.name
-                    ?<div style={{fontSize:12,color:'var(--red)',marginTop:4,fontWeight:600}}>❌ Failed @ {ranked[0].fellAt.name}</div>
+                    ?<div style={{fontSize:12,color:'var(--red)',marginTop:4,fontWeight:600,display:'flex',alignItems:'center',gap:5}}><I.XCircle s={13} c="var(--red)"/> Failed @ {ranked[0].fellAt.name}</div>
                     :<div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>DNF</div>
                 }
               </div>
@@ -1785,15 +1798,15 @@ const ResultsView=({compId,athletes})=>{
                 <div style={{width:28,height:28,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--muted)'}}>{i<2?medals[i+1]:i+2}</div>
                 {a.photo?<img src={a.photo} style={{width:32,height:32,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:700,fontSize:14,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}{r.protested&&<span style={{marginLeft:6,fontSize:11}}>🚩</span>}</div>
+                  <div style={{fontWeight:700,fontSize:14,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}{r.protested&&<span style={{marginLeft:6}}><I.Flag s={11} c="var(--gold)"/></span>}</div>
                   <div style={{fontSize:11,color:'var(--muted)',marginTop:1,display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                     <span style={{fontFamily:'JetBrains Mono'}}>#{a.num}</span>
                     <span>{r.doneCP?.length||0} CPs</span>
                     {a.team&&<span style={{color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}
                     {r.status==='complete'
-                      ?<span style={{color:'var(--green)',fontWeight:600}}>🎯 Buzzer</span>
+                      ?<span style={{color:'var(--green)',fontWeight:600,display:'inline-flex',alignItems:'center',gap:4}}><I.Target s={11} c="var(--green)"/> Buzzer</span>
                       :r.fellAt?.name
-                        ?<span style={{color:'var(--red)',fontWeight:600}}>❌ {r.fellAt.name}</span>
+                        ?<span style={{color:'var(--red)',fontWeight:600,display:'inline-flex',alignItems:'center',gap:4}}><I.XCircle s={11} c="var(--red)"/> {r.fellAt.name}</span>
                         :<span>DNF</span>
                     }
                   </div>
@@ -1803,7 +1816,7 @@ const ResultsView=({compId,athletes})=>{
             );})}
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-ghost" style={{flex:1,padding:12,gap:7}} onClick={()=>exportAll('csv')}><I.Download s={15}/> CSV</button>
-              <button className="btn btn-ghost" style={{flex:1,padding:12,gap:7}} onClick={()=>exportAll('text')}>📤 {lang==='de'?'Teilen':'Share'}</button>
+              <button className="btn btn-ghost" style={{flex:1,padding:12,gap:7}} onClick={()=>exportAll('text')}><I.Share2 s={15}/> {lang==='de'?'Teilen':'Share'}</button>
             </div>
           </div>
         );
@@ -1897,7 +1910,7 @@ const JuryApp=({compId,stNum,onBack})=>{
               );
             })}
             {IGN_CATS.filter(c=>athList.some(a=>a.cat===c.id)).length===0&&(
-              <EmptyState icon="👤" text="Noch keine Athleten angelegt. Wettkampf bearbeiten."/>
+              <EmptyState icon={<I.User s={28} c="rgba(255,255,255,.3)"/>} text="Noch keine Athleten angelegt. Wettkampf bearbeiten."/>
             )}
           </div>
         </div>
@@ -2054,15 +2067,15 @@ const DisplayView=({compId,onBack})=>{
                   <div style={{position:'absolute',inset:0,background:run.status==='complete'?'rgba(11,11,20,.9)':'rgba(11,11,20,.9)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,borderRadius:20,gap:6}}>
                     {run.status==='complete'
                       ?<>
-                        <div style={{fontSize:cols===1?56:46,lineHeight:1}}>🎉</div>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'center',width:cols===1?64:52,height:cols===1?64:52,borderRadius:'50%',background:'rgba(52,199,89,.15)',border:'2px solid rgba(52,199,89,.3)'}}><I.CheckCircle s={cols===1?36:28} c="var(--green)"/></div>
                         <div style={{fontSize:cols===1?36:28,fontWeight:900,color:'var(--green)',letterSpacing:'-.5px'}}>ZIEL!</div>
                         {run.finalTime&&<div style={{fontFamily:'JetBrains Mono',fontSize:cols===1?34:26,fontWeight:700,color:'#FF5E3A'}}>{fmtMs(run.finalTime)}</div>}
-                        <div style={{fontSize:12,color:'rgba(255,255,255,.45)',marginTop:2}}>🎯 {lang==='de'?'Buzzer':'Buzzer'}</div>
+                        <div style={{fontSize:12,color:'rgba(255,255,255,.45)',marginTop:2,display:'flex',alignItems:'center',gap:5}}><I.Target s={12} c="rgba(255,255,255,.45)"/> {lang==='de'?'Buzzer':'Buzzer'}</div>
                       </>
                       :<>
-                        <div style={{fontSize:cols===1?56:46,lineHeight:1}}>💥</div>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'center',width:cols===1?64:52,height:cols===1?64:52,borderRadius:'50%',background:'rgba(255,59,48,.15)',border:'2px solid rgba(255,59,48,.3)'}}><I.XCircle s={cols===1?36:28} c="var(--red)"/></div>
                         <div style={{fontSize:cols===1?32:26,fontWeight:900,color:'var(--red)',letterSpacing:'-.3px'}}>{lang==='de'?'FAIL':'FAIL'}</div>
-                        {run.fellAt?.name&&<div style={{fontSize:cols===1?16:13,color:'rgba(255,255,255,.55)',textAlign:'center',padding:'0 8px'}}>❌ {run.fellAt.name}</div>}
+                        {run.fellAt?.name&&<div style={{fontSize:cols===1?15:13,color:'rgba(255,255,255,.55)',textAlign:'center',padding:'0 8px',display:'flex',alignItems:'center',gap:5,justifyContent:'center'}}><I.XCircle s={14} c="rgba(255,255,255,.45)"/> {run.fellAt.name}</div>}
                         {run.doneCP?.length>0&&<div style={{fontSize:12,color:'rgba(255,255,255,.35)',fontFamily:'JetBrains Mono'}}>{run.doneCP.length} CPs</div>}
                       </>
                     }
