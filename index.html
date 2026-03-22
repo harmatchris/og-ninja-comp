@@ -476,6 +476,17 @@ const computeRanked=(runList,catId)=>{
 };
 
 // ════════════════════════════════════════════════════════════
+// ── PHOTO RESIZE UTILITY (module-level, used by SetupWizard + CoordinatorView) ──
+const resizePhotoUtil=(file,cb)=>{
+  const img=new Image();const url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const s=120;const canvas=document.createElement('canvas');canvas.width=s;canvas.height=s;
+    const ctx=canvas.getContext('2d');const min=Math.min(img.width,img.height);
+    const sx=(img.width-min)/2,sy=(img.height-min)/2;
+    ctx.drawImage(img,sx,sy,min,min,0,0,s,s);URL.revokeObjectURL(url);
+    cb(canvas.toDataURL('image/jpeg',0.82));
+  };img.src=url;
+};
 // ── SCROLL TIME PICKER ──────────────────────────────────────
 const TimePicker=({value,onChange,allowDefault=false})=>{
   const {lang}=useLang();
@@ -569,16 +580,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   // Sync stageNum in newAth when obsStage changes
   const curAthStage=athStage;
 
-  const resizePhoto=(file,cb)=>{
-    const img=new Image();const url=URL.createObjectURL(file);
-    img.onload=()=>{
-      const s=120;const canvas=document.createElement('canvas');canvas.width=s;canvas.height=s;
-      const ctx=canvas.getContext('2d');const min=Math.min(img.width,img.height);
-      const sx=(img.width-min)/2,sy=(img.height-min)/2;
-      ctx.drawImage(img,sx,sy,min,min,0,0,s,s);URL.revokeObjectURL(url);
-      cb(canvas.toDataURL('image/jpeg',0.82));
-    };img.src=url;
-  };
+  const resizePhoto=resizePhotoUtil;
   const addObs=()=>{
     if(!newObs.trim())return;
     const si=Math.min(obsStage,numSt-1);
@@ -943,7 +945,7 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
   const [copied,setCopied]=useState(null);
   const [showRestart,setShowRestart]=useState(false);
   const [showAddAth,setShowAddAth]=useState(false);
-  const [quickAth,setQuickAth]=useState({name:'',num:'',cat:'am1',gender:'m',country:'',team:''});
+  const [quickAth,setQuickAth]=useState({name:'',num:'',cat:'am1',gender:'m',country:'',team:'',photo:null});
   const [addingAth,setAddingAth]=useState(false);
   if(!info)return<Spinner/>;
   const handleRestart=async()=>{
@@ -970,14 +972,14 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
     setAddingAth(true);
     const id=uid();
     const numSugg=quickAth.num||String((athList.length+1));
-    const newA={id,name:quickAth.name.trim(),num:numSugg,cat:quickAth.cat,gender:quickAth.gender,country:quickAth.country||'',team:quickAth.team||''};
+    const newA={id,name:quickAth.name.trim(),num:numSugg,cat:quickAth.cat,gender:quickAth.gender,country:quickAth.country||'',team:quickAth.team||'',photo:quickAth.photo||null};
     await fbSet(`ogn/${compId}/athletes/${id}`,newA);
     // Also write to all stage athlete lists so they show up in JuryApp
     const numSt2=info.numStations||1;
     const updates={};
     for(let s=1;s<=numSt2;s++){updates[`ogn/${compId}/stages/${s}/athletes/${id}`]=newA;}
     if(Object.keys(updates).length)db.ref().update(updates);
-    setQuickAth(a=>({...a,name:'',num:'',country:'',team:''}));
+    setQuickAth(a=>({...a,name:'',num:'',country:'',team:'',photo:null}));
     setAddingAth(false);SFX.complete();
   };
   if(editing){
@@ -1100,6 +1102,13 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
               <input value={quickAth.country||''} onChange={e=>setQuickAth(a=>({...a,country:e.target.value}))} placeholder={lang==='de'?'Land (z.B. CH)':'Country'} style={{flex:1}}/>
               <input value={quickAth.team||''} onChange={e=>setQuickAth(a=>({...a,team:e.target.value}))} placeholder="Team" style={{flex:1}}/>
             </div>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',padding:'7px 10px',background:'rgba(255,255,255,.03)',borderRadius:10,border:'1px solid var(--border)'}}>
+              {quickAth.photo
+                ?<><img src={quickAth.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/><span style={{fontSize:12,flex:1}}>{lang==='de'?'Foto ändern ✓':'Change photo ✓'}</span><button style={{background:'rgba(255,59,48,.15)',border:'none',borderRadius:6,padding:'2px 8px',color:'var(--red)',fontSize:11,cursor:'pointer'}} onClick={e=>{e.preventDefault();setQuickAth(a=>({...a,photo:null}));}}>{lang==='de'?'Löschen':'Remove'}</button></>
+                :<><span style={{fontSize:18}}>📷</span><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto (optional)':'Photo (optional)'}</span></>
+              }
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>{if(e.target.files[0])resizePhotoUtil(e.target.files[0],b64=>setQuickAth(a=>({...a,photo:b64})));e.target.value='';}}/>
+            </label>
             <button className="btn btn-coral" style={{padding:'10px',gap:6}} disabled={addingAth||!quickAth.name.trim()} onClick={handleQuickAddAth}>
               {addingAth?'Speichern…':<><I.Plus s={15}/> {lang==='de'?'Athlet hinzufügen':'Add Athlete'}</>}
             </button>
@@ -1714,13 +1723,14 @@ const ResultsView=({compId,athletes})=>{
   const medals=['🥇','🥈','🥉'];
   const exportAll=(format='csv')=>{
     if(format==='csv'){
-      const rows=[['Platz','#','Name','Kategorie','CPs','Zeit','Status','Reklamation']];
+      const rows=[['Platz','#','Name','Team','Land','Kategorie','CPs','Zeit','Ergebnis','Reklamation']];
       catsWithRuns.forEach(c=>{
         const r=computeRanked(runList,c.id);
         if(!r.length)return;
         r.forEach((run,i)=>{
           const a=athMap[run.athleteId]||{name:run.athleteName||'?',num:'?'};
-          rows.push([i+1,`"${a.num}"`,`"${a.name}"`,`"${catName(c)}"`,run.doneCP?.length||0,fmtMs(run.finalTime),run.status||'',run.protested?'🚩':'']);
+          const ergebnis=run.status==='complete'?'Buzzer':run.fellAt?.name?`Failed @ ${run.fellAt.name}`:(run.status||'DNF');
+          rows.push([i+1,`"${a.num}"`,`"${a.name}"`,`"${a.team||''}"`,`"${a.country||''}"`,`"${catName(c)}"`,run.doneCP?.length||0,run.status==='complete'?fmtMs(run.finalTime):'',`"${ergebnis}"`,run.protested?'🚩':'']);
         });
       });
       const csv=rows.map(r=>r.join(',')).join('\n');
@@ -1752,29 +1762,43 @@ const ResultsView=({compId,athletes})=>{
           <div className="section">
             {ranked[0]&&(()=>{const a=athMap[ranked[0].athleteId]||{name:ranked[0].athleteName||'?',num:'?'};return(
               <div className="winner-card">
-                <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8,fontWeight:600}}>🥇 Platz 1</div>
-                <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8,fontSize:14}}>🚩</span>}</div>
-                <div className="timer-grad" style={{fontSize:28,marginTop:6}}>{ranked[0].status==='complete'?fmtMs(ranked[0].finalTime):(lang==='de'?'DNF':'DNF')}</div>
-                <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{ranked[0].doneCP?.length||0} / {ranked[0].totalCPs||'?'} CPs · #{a.num}</div>
+                <div style={{fontSize:10,color:'var(--cor)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:10,fontWeight:600}}>🥇 Platz 1</div>
+                <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+                  {a.photo?<img src={a.photo} style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,215,10,.4)',flexShrink:0}}/>:null}
+                  <div>
+                    <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8,fontSize:14}}>🚩</span>}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>#{a.num}{a.team&&<span style={{marginLeft:6,color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{a.country}</span>}</div>
+                  </div>
+                </div>
+                <div className="timer-grad" style={{fontSize:28,marginTop:2}}>{ranked[0].status==='complete'?fmtMs(ranked[0].finalTime):'DNF'}</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:4}}>{ranked[0].doneCP?.length||0} / {ranked[0].totalCPs||'?'} CPs</div>
                 {ranked[0].status==='complete'
-                  ?<div style={{fontSize:11,color:'var(--green)',marginTop:3}}>✓ {lang==='de'?'Ziel erreicht':'Finished'}</div>
-                  :ranked[0].fellAt?.name&&<div style={{fontSize:11,color:'var(--muted)',marginTop:3}}>↩ {ranked[0].fellAt.name}</div>
+                  ?<div style={{fontSize:12,color:'var(--green)',marginTop:4,fontWeight:700}}>🎯 Buzzer ✓</div>
+                  :ranked[0].fellAt?.name
+                    ?<div style={{fontSize:12,color:'var(--red)',marginTop:4,fontWeight:600}}>❌ Failed @ {ranked[0].fellAt.name}</div>
+                    :<div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>DNF</div>
                 }
               </div>
-            );})()} 
+            );})()}
             {ranked.slice(1).map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-              <div key={r.athleteId} className="sh-card fade-up" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:30,height:30,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'var(--muted)'}}>{i<2?medals[i+1]:i+2}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:14}}>{a.name}{r.protested&&<span style={{marginLeft:6,fontSize:11}}>🚩</span>}</div>
-                  <div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>#{a.num} · {r.doneCP?.length||0} CPs
+              <div key={r.athleteId} className="sh-card fade-up" style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:28,height:28,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--muted)'}}>{i<2?medals[i+1]:i+2}</div>
+                {a.photo?<img src={a.photo} style={{width:32,height:32,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}{r.protested&&<span style={{marginLeft:6,fontSize:11}}>🚩</span>}</div>
+                  <div style={{fontSize:11,color:'var(--muted)',marginTop:1,display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                    <span style={{fontFamily:'JetBrains Mono'}}>#{a.num}</span>
+                    <span>{r.doneCP?.length||0} CPs</span>
+                    {a.team&&<span style={{color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}
                     {r.status==='complete'
-                      ?<span style={{color:'var(--green)',marginLeft:6}}>✓ {lang==='de'?'Ziel':'Finish'}</span>
-                      :r.fellAt?.name&&<span style={{marginLeft:6}}>· ↩ {r.fellAt.name}</span>
+                      ?<span style={{color:'var(--green)',fontWeight:600}}>🎯 Buzzer</span>
+                      :r.fellAt?.name
+                        ?<span style={{color:'var(--red)',fontWeight:600}}>❌ {r.fellAt.name}</span>
+                        :<span>DNF</span>
                     }
                   </div>
                 </div>
-                <div className="timer-grad" style={{fontSize:15}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                <div className="timer-grad" style={{fontSize:14,flexShrink:0}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
               </div>
             );})}
             <div style={{display:'flex',gap:8}}>
@@ -1813,6 +1837,22 @@ const JuryApp=({compId,stNum,onBack})=>{
   const [lives,setLives]=useState(3);
   const [goTime,setGoTime]=useState(null); // performance.now() captured when GO horn fires
   useEffect(()=>{if(info)setLives(info.lives||3);},[info?.lives]);
+
+  // After run completes: keep stage card on Display for 5s showing result, then clear
+  useEffect(()=>{
+    if(phase==='done'&&doneResult&&currentAth){
+      // Small delay so JuryActive's cleanup (fbRemove) fires first, then we write back
+      const tWrite=setTimeout(()=>{
+        fbSet(`ogn/${compId}/activeRuns/${stNum}`,{
+          athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat||null,
+          phase:'done',status:doneResult.status,finalTime:doneResult.finalTime||null,
+          doneCP:doneResult.doneCP||[],fellAt:doneResult.fellAt||null,doneAt:Date.now()
+        });
+      },200);
+      const tRemove=setTimeout(()=>fbRemove(`ogn/${compId}/activeRuns/${stNum}`),5200);
+      return()=>{clearTimeout(tWrite);clearTimeout(tRemove);};
+    }
+  },[phase,doneResult?.timestamp]);
 
   // Broadcast countdown phase to Firebase so DisplayView shows live countdown on stage card
   useEffect(()=>{
@@ -2007,6 +2047,26 @@ const DisplayView=({compId,onBack})=>{
                   <div style={{position:'absolute',inset:0,background:'rgba(11,11,20,.94)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,borderRadius:20}}>
                     <div className="timer-grad" style={{fontSize:cols===1?150:110,lineHeight:1,letterSpacing:'-6px',animation:'scaleIn .3s cubic-bezier(.16,1,.3,1)'}}>{run.countdown}</div>
                     <div style={{fontSize:13,color:'rgba(255,255,255,.5)',letterSpacing:'.18em',textTransform:'uppercase',fontWeight:700,marginTop:8}}>Stage {run.stNum} · {lang==='de'?'Bereit…':'Get ready…'}</div>
+                  </div>
+                )}
+                {/* Done result overlay (shown 5s after run ends) */}
+                {run.phase==='done'&&(
+                  <div style={{position:'absolute',inset:0,background:run.status==='complete'?'rgba(11,11,20,.9)':'rgba(11,11,20,.9)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,borderRadius:20,gap:6}}>
+                    {run.status==='complete'
+                      ?<>
+                        <div style={{fontSize:cols===1?56:46,lineHeight:1}}>🎉</div>
+                        <div style={{fontSize:cols===1?36:28,fontWeight:900,color:'var(--green)',letterSpacing:'-.5px'}}>ZIEL!</div>
+                        {run.finalTime&&<div style={{fontFamily:'JetBrains Mono',fontSize:cols===1?34:26,fontWeight:700,color:'#FF5E3A'}}>{fmtMs(run.finalTime)}</div>}
+                        <div style={{fontSize:12,color:'rgba(255,255,255,.45)',marginTop:2}}>🎯 {lang==='de'?'Buzzer':'Buzzer'}</div>
+                      </>
+                      :<>
+                        <div style={{fontSize:cols===1?56:46,lineHeight:1}}>💥</div>
+                        <div style={{fontSize:cols===1?32:26,fontWeight:900,color:'var(--red)',letterSpacing:'-.3px'}}>{lang==='de'?'FAIL':'FAIL'}</div>
+                        {run.fellAt?.name&&<div style={{fontSize:cols===1?16:13,color:'rgba(255,255,255,.55)',textAlign:'center',padding:'0 8px'}}>❌ {run.fellAt.name}</div>}
+                        {run.doneCP?.length>0&&<div style={{fontSize:12,color:'rgba(255,255,255,.35)',fontFamily:'JetBrains Mono'}}>{run.doneCP.length} CPs</div>}
+                      </>
+                    }
+                    <div style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.25)',letterSpacing:'.08em',marginTop:4}}>{ath.name||run.athleteName}</div>
                   </div>
                 )}
                 <div style={{padding:cols===1?'22px 24px':'18px 20px'}}>
