@@ -462,7 +462,7 @@ const computeRanked=(runList,catId)=>{
 const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages=null,initialObstacles=null,initialAthletes=null})=>{
   const {t,lang}=useLang();
   const [step,setStep]=useState(0);
-  const [info,setInfo]=useState(initialInfo||{name:'',date:today(),location:'',mode:'classic',numStations:2,lives:3,timeLimit:0});
+  const [info,setInfo]=useState(initialInfo||{name:'',date:today(),location:'',mode:'classic',numStations:2,lives:3,timeLimit:0,stageLimits:{}});
   // Per-stage obstacles: array[stageIdx] = [{id,name,isCP,order}]
   const [stageObs,setStageObs]=useState(()=>{
     const n=initialInfo?.numStations||2;
@@ -488,6 +488,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   const [saving,setSaving]=useState(false);
   const [csvError,setCsvError]=useState('');
   const sI=(k,v)=>setInfo(i=>({...i,[k]:v}));
+  const setStageLim=(n,v)=>setInfo(i=>({...i,stageLimits:{...(i.stageLimits||{}),[n]:v}}));
   const numSt=info.numStations||1;
   // Sync stageNum in newAth when obsStage changes
   const curAthStage=athStage;
@@ -642,7 +643,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           )}
           <div className="lbl">{t('numStations')}</div>
           <div style={{display:'flex',gap:6}}>{[1,2,3,4].map(n=><button key={n} className={`chip${info.numStations===n?' active':''}`} style={{flex:1,justifyContent:'center'}} onClick={()=>sI('numStations',n)}>{n}</button>)}</div>
-          <div className="lbl">⏱ {lang==='de'?'Zeitlimit pro Lauf':'Time limit per run'}</div>
+          <div className="lbl">⏱ {lang==='de'?'Zeitlimit':'Time limit'}{numSt>1?` (${lang==='de'?'Standard für alle Stages':'Default for all stages'})`:` ${lang==='de'?'pro Lauf':'per run'}`}</div>
           <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{[0,60,90,120,150,180,240,300].map(s=><button key={s} className={`chip${(info.timeLimit||0)===s?' active':''}`} style={{justifyContent:'center',minWidth:50}} onClick={()=>sI('timeLimit',s)}>{s===0?(lang==='de'?'Kein':'None'):fmtMs(s*1000).slice(0,-4)}</button>)}
             <div style={{display:'flex',alignItems:'center',gap:5,flex:1,minWidth:130}}>
               <input type="number" min="0" max="3600" placeholder={lang==='de'?'Manuell (s)':'Custom (s)'}
@@ -652,6 +653,42 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
               <span style={{fontSize:11,color:'var(--dim)',flexShrink:0}}>s</span>
             </div>
           </div>
+          {numSt>1&&(
+            <div style={{background:'rgba(255,255,255,.03)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',display:'flex',flexDirection:'column',gap:8}}>
+              <div className="lbl">⏱ {lang==='de'?'Zeitlimit pro Stage (überschreibt Standard)':'Time limit per stage (overrides default)'}</div>
+              {Array.from({length:numSt},(_,i)=>{
+                const n=i+1;
+                const val=info.stageLimits?.[n];
+                const preset=[0,60,90,120,150,180,240,300];
+                return(
+                  <div key={n} style={{display:'flex',alignItems:'center',gap:8}}>
+                    <div style={{fontSize:12,fontWeight:700,color:'var(--cor)',minWidth:54,flexShrink:0}}>Stage {n}</div>
+                    <div style={{display:'flex',gap:4,flex:1,flexWrap:'wrap'}}>
+                      {[null,...preset].map(s=>{
+                        const isActive=s===null?(val==null||val===undefined):(val===s);
+                        return(
+                          <button key={s??'def'} className={`chip${isActive?' active':''}`}
+                            style={{padding:'3px 9px',fontSize:11,justifyContent:'center'}}
+                            onClick={()=>{
+                              if(s===null){setStageLim(n,undefined);}
+                              else setStageLim(n,s);
+                              SFX.hover();
+                            }}>
+                            {s===null?(lang==='de'?'Standard':'Default'):s===0?(lang==='de'?'Kein':'None'):fmtMs(s*1000).slice(0,-4)}
+                          </button>
+                        );
+                      })}
+                      <input type="number" min="0" max="3600"
+                        placeholder={lang==='de'?'Manuell':'Custom'}
+                        style={{width:80,padding:'3px 8px',fontSize:11,borderRadius:20,height:28,textAlign:'center'}}
+                        value={val!=null&&!preset.includes(val)?val:''}
+                        onChange={e=>{const v=parseInt(e.target.value,10);if(!isNaN(v)&&v>=0)setStageLim(n,v);}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -852,6 +889,30 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
             </div>
           ))}
         </div>
+        {/* ── JOIN CODE PANEL ── */}
+        <div className="sh-card" style={{padding:'14px 16px',display:'flex',alignItems:'center',gap:14}}>
+          <div style={{flex:1}}>
+            <div className="lbl" style={{marginBottom:5}}>🔗 {lang==='de'?'Beitrittscode':'Join code'}</div>
+            <div style={{fontFamily:'JetBrains Mono',fontSize:28,fontWeight:900,letterSpacing:'.18em',color:'var(--cor)',lineHeight:1}}>{compId}</div>
+            <div style={{fontSize:11,color:'var(--dim)',marginTop:4}}>{lang==='de'?'Code an Jury-Geräte weitergeben':'Share this code with jury devices'}</div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:6,flexShrink:0}}>
+            <button className="btn btn-ghost" style={{padding:'8px 12px',fontSize:12,gap:6,whiteSpace:'nowrap'}}
+              onClick={()=>{navigator.clipboard?.writeText(compId);setCopied('code');setTimeout(()=>setCopied(null),2000);SFX.click();}}>
+              {copied==='code'?<><I.Check s={13} c="var(--green)"/> {t('copied')}</>:<>📋 {lang==='de'?'Code kopieren':'Copy code'}</>}
+            </button>
+            <button className="btn btn-ghost" style={{padding:'8px 12px',fontSize:12,gap:6,whiteSpace:'nowrap'}}
+              onClick={()=>{
+                const url=`${base}?comp=${compId}`;
+                if(navigator.share)navigator.share({title:info.name||'OG Ninja Comp',text:`Wettkampf-Code: ${compId}`,url});
+                else{navigator.clipboard?.writeText(url);setCopied('url');setTimeout(()=>setCopied(null),2000);}
+                SFX.click();
+              }}>
+              {copied==='url'?<><I.Check s={13} c="var(--green)"/> {t('copied')}</>:<><I.Download s={13}/> {lang==='de'?'Link teilen':'Share link'}</>}
+            </button>
+          </div>
+        </div>
+
         <div style={{display:'flex',gap:8}}>
           <button className="btn btn-ghost" style={{flex:1,padding:12,gap:7}} onClick={()=>window.open(`${base}?mode=display&comp=${compId}`,'_blank')}>
             <I.Monitor s={15}/> {t('openDisplay')} ↗
@@ -1040,7 +1101,9 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,activeFalls,startPe
   const el=useTimer(true,startPerf);
   const [flash,setFlash]=useState(false);
   const hasLives=info.mode==='lives'||info.mode==='segliv';
-  const timeLimitMs=(info.timeLimit||0)*1000;
+  // Per-stage time limit overrides the global default
+  const effectiveLimit=info.stageLimits?.[stNum]!=null?info.stageLimits[stNum]:(info.timeLimit||0);
+  const timeLimitMs=effectiveLimit*1000;
   const remaining=timeLimitMs>0?Math.max(0,timeLimitMs-el):null;
   const timeCritical=remaining!==null&&remaining<15000;
 
