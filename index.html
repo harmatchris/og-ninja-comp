@@ -542,7 +542,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   const [obsStage,setObsStage]=useState(0);// which stage tab is active for obstacles
   const [athStage,setAthStage]=useState(0);// which stage tab is active for athletes
   const [newObs,setNewObs]=useState('');
-  const [newAth,setNewAth]=useState({name:'',num:'1',cat:'am1',gender:'m',stageNum:1});
+  const [newAth,setNewAth]=useState({name:'',num:'1',cat:'am1',gender:'m',country:'',team:'',photo:null,stageNum:1});
   const [saving,setSaving]=useState(false);
   const [csvError,setCsvError]=useState('');
   const sI=(k,v)=>setInfo(i=>({...i,[k]:v}));
@@ -551,6 +551,16 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   // Sync stageNum in newAth when obsStage changes
   const curAthStage=athStage;
 
+  const resizePhoto=(file,cb)=>{
+    const img=new Image();const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const s=120;const canvas=document.createElement('canvas');canvas.width=s;canvas.height=s;
+      const ctx=canvas.getContext('2d');const min=Math.min(img.width,img.height);
+      const sx=(img.width-min)/2,sy=(img.height-min)/2;
+      ctx.drawImage(img,sx,sy,min,min,0,0,s,s);URL.revokeObjectURL(url);
+      cb(canvas.toDataURL('image/jpeg',0.82));
+    };img.src=url;
+  };
   const addObs=()=>{
     if(!newObs.trim())return;
     const si=Math.min(obsStage,numSt-1);
@@ -599,11 +609,11 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
     for(const line of lines.slice(start)){
       const parts=line.split(/[,;\t]/).map(s=>s.trim().replace(/^["']|["']$/g,''));
       if(parts.length<2){setCsvError(`Ungültige Zeile: ${line}`);return;}
-      const [num,name,catRaw='',genderRaw='']=parts;
+      const [num,name,catRaw='',genderRaw='',countryRaw='',teamRaw='']=parts;
       const catLow=catRaw.toLowerCase();
       const cat=IGN_CATS.find(c=>c.id===catLow||c.name.de.toLowerCase().includes(catLow)||c.name.en.toLowerCase().includes(catLow))||IGN_CATS[9];
       const gender=normalizeGender(genderRaw);
-      results.push({id:uid(),num:num||String(results.length+1),name,cat:cat.id,gender,stageNum:si+1});
+      results.push({id:uid(),num:num||String(results.length+1),name,cat:cat.id,gender,country:countryRaw.trim(),team:teamRaw.trim(),stageNum:si+1});
     }
     if(results.length===0){setCsvError('Keine Athleten gefunden');return;}
     setStageAths(a=>{const n=[...a];n[si]=[...n[si],...results];return n;});
@@ -612,11 +622,11 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
   };
   const downloadCsvTemplate=()=>{
     const rows=[
-      'Startnr,Name,Kategorie-ID,Geschlecht',
-      '1,Max Muster,am1,M',
-      '2,Laura Beispiel,aw1,W',
-      '3,Robin Test,am2,D',
-      '4,Anna Sample,jm1,W',
+      'Startnr,Name,Kategorie-ID,Geschlecht,Land,Team',
+      '1,Max Muster,am1,M,CH,',
+      '2,Laura Beispiel,aw1,W,AT,Team Ninja',
+      '3,Robin Test,am2,D,DE,',
+      '4,Anna Sample,jm1,W,CH,SwissNinja',
     ];
     const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -791,7 +801,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           </div>
           {csvError&&<div style={{fontSize:12,color:'var(--red)',background:'rgba(255,59,48,.08)',borderRadius:8,padding:'7px 12px'}}>⚠️ {csvError}</div>}
           <div style={{fontSize:11,color:'var(--muted)',background:'rgba(255,255,255,.03)',borderRadius:8,padding:'7px 12px'}}>
-            📋 CSV-Format: <code style={{fontSize:10,color:'var(--cor)'}}>Startnr, Name, Kategorie-ID, Geschlecht</code> — {lang==='de'?'Geschlecht: M/W/D (optional)':'Gender: M/W/D (optional)'}
+            📋 CSV-Format: <code style={{fontSize:10,color:'var(--cor)'}}>Startnr, Name, Kategorie-ID, Geschlecht, Land, Team</code> — {lang==='de'?'Land/Team optional':'Country/Team optional'}
           </div>
           <div style={{maxHeight:230,overflowY:'auto'}}>
             {curAths.length===0?<EmptyState icon="👤" text="Noch keine Athleten"/>:
@@ -800,10 +810,14 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
                   <div style={{padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
                     <div className="drag-handle"><I.Drag s={15}/></div>
                     <div style={{fontSize:11,color:'var(--cor)',minWidth:16,fontWeight:700}}>{i+1}</div>
-                    <div style={{flex:1,fontSize:13,fontWeight:600}}>{a.name}</div>
-                    <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>#{a.num}</div>
-                    <div style={{fontSize:10,padding:'2px 7px',borderRadius:10,background:`${cat?.color||'#888'}1A`,color:cat?.color||'#888',border:`1px solid ${cat?.color||'#888'}44`,fontWeight:600,whiteSpace:'nowrap'}}>{cat?.name[lang]||'?'}</div>
-                    <button style={{background:'none',border:'none',cursor:'pointer',padding:4,display:'flex'}} onClick={()=>removeAth(asi,a.id)}><I.Trash s={13} c="var(--red)"/></button>
+                    {a.photo?<img src={a.photo} style={{width:26,height:26,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,flexShrink:0}}>👤</div>}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
+                      {(a.country||a.team)&&<div style={{fontSize:10,color:'var(--muted)'}}>{[a.country,a.team].filter(Boolean).join(' · ')}</div>}
+                    </div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono',flexShrink:0}}>#{a.num}</div>
+                    <div style={{fontSize:10,padding:'2px 7px',borderRadius:10,background:`${cat?.color||'#888'}1A`,color:cat?.color||'#888',border:`1px solid ${cat?.color||'#888'}44`,fontWeight:600,whiteSpace:'nowrap',flexShrink:0}}>{cat?.name[lang]||'?'}</div>
+                    <button style={{background:'none',border:'none',cursor:'pointer',padding:4,display:'flex',flexShrink:0}} onClick={()=>removeAth(asi,a.id)}><I.Trash s={13} c="var(--red)"/></button>
                   </div>
                 );}}/>
             }
@@ -822,6 +836,17 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
                   onClick={()=>setNewAth(a=>({...a,gender:v}))}>{lbl}</button>
               ))}
             </div>
+            <div style={{display:'flex',gap:8}}>
+              <input value={newAth.country||''} onChange={e=>setNewAth(a=>({...a,country:e.target.value}))} placeholder={lang==='de'?'Land (z.B. CH)':'Country (e.g. CH)'} style={{flex:1}}/>
+              <input value={newAth.team||''} onChange={e=>setNewAth(a=>({...a,team:e.target.value}))} placeholder={lang==='de'?'Team (optional)':'Team (optional)'} style={{flex:1}}/>
+            </div>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',padding:'7px 10px',background:'rgba(255,255,255,.03)',borderRadius:10,border:'1px solid var(--border)'}}>
+              {newAth.photo
+                ?<><img src={newAth.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/><span style={{fontSize:12,flex:1}}>{lang==='de'?'Foto ändern ✓':'Change photo ✓'}</span><button style={{background:'rgba(255,59,48,.15)',border:'none',borderRadius:6,padding:'2px 8px',color:'var(--red)',fontSize:11,cursor:'pointer'}} onClick={e=>{e.preventDefault();setNewAth(a=>({...a,photo:null}));}}>{lang==='de'?'Löschen':'Remove'}</button></>
+                :<><span style={{fontSize:18}}>📷</span><span style={{fontSize:12,flex:1,color:'var(--muted)'}}>{lang==='de'?'Foto hinzufügen (optional)':'Add photo (optional)'}</span></>
+              }
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>{if(e.target.files[0])resizePhoto(e.target.files[0],b64=>setNewAth(a=>({...a,photo:b64})));e.target.value='';}}/>
+            </label>
             <button className="btn btn-coral" style={{padding:10,gap:6}} onClick={addAth}><I.Plus s={15}/> {t('addAth')}</button>
           </div>
         </div>
@@ -899,12 +924,30 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
   const [showQR,setShowQR]=useState(null);
   const [copied,setCopied]=useState(null);
   const [showRestart,setShowRestart]=useState(false);
+  const [showAddAth,setShowAddAth]=useState(false);
+  const [quickAth,setQuickAth]=useState({name:'',num:'',cat:'am1',gender:'m',country:'',team:''});
+  const [addingAth,setAddingAth]=useState(false);
   if(!info)return<Spinner/>;
   const handleRestart=async()=>{
     if(!window.confirm(lang==='de'?`Alle Läufe von "${info.name}" löschen und Wettkampf neu starten?\n\nDie Athleten-Liste und Hindernisse bleiben erhalten.`:`Delete all runs from "${info.name}" and restart?\n\nAthletes and obstacles are kept.`))return;
     await fbRemove(`ogn/${compId}/completedRuns`);
     await fbRemove(`ogn/${compId}/activeRuns`);
     SFX.complete();setShowRestart(false);
+  };
+  const handleQuickAddAth=async()=>{
+    if(!quickAth.name.trim())return;
+    setAddingAth(true);
+    const id=uid();
+    const numSugg=quickAth.num||String((athList.length+1));
+    const newA={id,name:quickAth.name.trim(),num:numSugg,cat:quickAth.cat,gender:quickAth.gender,country:quickAth.country||'',team:quickAth.team||''};
+    await fbSet(`ogn/${compId}/athletes/${id}`,newA);
+    // Also write to all stage athlete lists so they show up in JuryApp
+    const numSt2=info.numStations||1;
+    const updates={};
+    for(let s=1;s<=numSt2;s++){updates[`ogn/${compId}/stages/${s}/athletes/${id}`]=newA;}
+    if(Object.keys(updates).length)db.ref().update(updates);
+    setQuickAth(a=>({...a,name:'',num:'',country:'',team:''}));
+    setAddingAth(false);SFX.complete();
   };
   if(editing){
     const initialStages=stages||null;
@@ -997,6 +1040,58 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
             </div>
           );
         })}
+
+        {/* ── Quick add athlete mid-competition ── */}
+        <div className="sep" style={{marginTop:8}}/>
+        <button className="btn btn-ghost" style={{width:'100%',padding:'11px 14px',gap:8,justifyContent:'space-between',fontSize:14}}
+          onClick={()=>{setShowAddAth(v=>!v);SFX.hover();}}>
+          <span style={{display:'flex',alignItems:'center',gap:8}}><I.Plus s={15}/> {lang==='de'?'Athleten nachträglich hinzufügen':'Add athlete during competition'}</span>
+          <span style={{fontSize:11,color:'var(--muted)'}}>{showAddAth?'▲':'▼'}</span>
+        </button>
+        {showAddAth&&(
+          <div className="scale-in" style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:14,padding:14,display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:12,color:'var(--muted)',marginBottom:2}}>💡 {lang==='de'?'Athlete wird sofort in alle Stages eingetragen':'Athlete is added to all stages immediately'}</div>
+            <div style={{display:'flex',gap:8}}>
+              <input value={quickAth.num} onChange={e=>setQuickAth(a=>({...a,num:e.target.value}))} placeholder="#" style={{width:60,flexShrink:0}}/>
+              <input value={quickAth.name} onChange={e=>setQuickAth(a=>({...a,name:e.target.value}))} placeholder={lang==='de'?'Name':'Name'} onKeyDown={e=>{if(e.key==='Enter')handleQuickAddAth();}} autoFocus/>
+            </div>
+            <select value={quickAth.cat} onChange={e=>setQuickAth(a=>({...a,cat:e.target.value}))}>
+              {IGN_CATS.map(c=><option key={c.id} value={c.id}>{c.name[lang]||c.name.de}</option>)}
+            </select>
+            <div style={{display:'flex',gap:6}}>
+              {[['m',lang==='de'?'M':'M'],['w',lang==='de'?'W':'W'],['d','D']].map(([v,lbl])=>(
+                <button key={v} className={`chip${quickAth.gender===v?' active':''}`} style={{flex:1,justifyContent:'center',fontSize:11}}
+                  onClick={()=>setQuickAth(a=>({...a,gender:v}))}>{lbl}</button>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <input value={quickAth.country||''} onChange={e=>setQuickAth(a=>({...a,country:e.target.value}))} placeholder={lang==='de'?'Land (z.B. CH)':'Country'} style={{flex:1}}/>
+              <input value={quickAth.team||''} onChange={e=>setQuickAth(a=>({...a,team:e.target.value}))} placeholder="Team" style={{flex:1}}/>
+            </div>
+            <button className="btn btn-coral" style={{padding:'10px',gap:6}} disabled={addingAth||!quickAth.name.trim()} onClick={handleQuickAddAth}>
+              {addingAth?'Speichern…':<><I.Plus s={15}/> {lang==='de'?'Athlet hinzufügen':'Add Athlete'}</>}
+            </button>
+          </div>
+        )}
+        {/* Athlete list quick overview */}
+        {athList.length>0&&(
+          <div style={{marginTop:4}}>
+            <div className="lbl" style={{marginBottom:6}}>{lang==='de'?`Athleten (${athList.length})`:`Athletes (${athList.length})`}</div>
+            <div style={{maxHeight:180,overflowY:'auto',display:'flex',flexDirection:'column',gap:4}}>
+              {athList.sort((a,b)=>(+a.num||0)-(+b.num||0)).map(a=>{
+                const cat=IGN_CATS.find(c=>c.id===a.cat);
+                return(
+                  <div key={a.id} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',background:'rgba(255,255,255,.03)',borderRadius:8}}>
+                    {a.photo?<img src={a.photo} style={{width:22,height:22,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
+                    <div style={{flex:1,fontSize:13,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>#{a.num}</div>
+                    {cat&&<div style={{fontSize:10,padding:'1px 7px',borderRadius:8,background:`${cat.color}1A`,color:cat.color,border:`1px solid ${cat.color}44`,fontWeight:600,flexShrink:0}}>{cat.name[lang]||'?'}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1687,6 +1782,16 @@ const JuryApp=({compId,stNum,onBack})=>{
   const [goTime,setGoTime]=useState(null); // performance.now() captured when GO horn fires
   useEffect(()=>{if(info)setLives(info.lives||3);},[info?.lives]);
 
+  // Broadcast countdown phase to Firebase so DisplayView shows live countdown on stage card
+  useEffect(()=>{
+    if(phase==='countdown'&&currentAth){
+      fbSet(`ogn/${compId}/activeRuns/${stNum}`,{athleteId:currentAth.id,athleteName:currentAth.name,catId:currentAth.cat||null,phase:'countdown',countdown:3,doneCP:[],livesLeft:lives});
+      const t1=setTimeout(()=>fbUpdate(`ogn/${compId}/activeRuns/${stNum}`,{countdown:2}),1000);
+      const t2=setTimeout(()=>fbUpdate(`ogn/${compId}/activeRuns/${stNum}`,{countdown:1}),2000);
+      return()=>{clearTimeout(t1);clearTimeout(t2);};
+    }
+  },[phase,currentAth?.id]);
+
   if(!info||globalObstacles===undefined)return(
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10}}><Spinner/><div style={{fontSize:12,color:'var(--muted)'}}>Stage {stNum} · {compId}</div></div>
   );
@@ -1823,7 +1928,10 @@ const DisplayView=({compId,onBack})=>{
   const runList=completedRuns?Object.values(completedRuns):[];
   const athMap=athletesMap||{};
   const catsWithData=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
-  const activeArr=activeRuns?Object.values(activeRuns).filter(r=>r?.athleteId):[];
+  // Build active run array with stage number attached
+  const activeArr=activeRuns
+    ?Object.entries(activeRuns).filter(([,r])=>r?.athleteId).map(([stNum,r])=>({stNum,...r}))
+    :[];
   useEffect(()=>{if(catsWithData.length<=1)return;const id=setInterval(()=>{setCatIdx(i=>(i+1)%catsWithData.length);setScrollOff(0);},15000);return()=>clearInterval(id);},[catsWithData.length]);
   useEffect(()=>{const id=setInterval(()=>{setScrollOff(off=>{const cat=catsWithData[catIdx];if(!cat)return 0;const total=computeRanked(runList,cat.id).length-3;return total>0?(off+1)%total:0;});},3000);return()=>clearInterval(id);},[catIdx,catsWithData.length,runList.length]);
   useEffect(()=>{let raf;const tick=()=>{setNowMs(Date.now());raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);},[]);
@@ -1831,8 +1939,10 @@ const DisplayView=({compId,onBack})=>{
   const curCat=catsWithData[catIdx]||null;const ranked=curCat?computeRanked(runList,curCat.id):[];
   const top3=ranked.slice(0,3);const visRest=ranked.slice(3).slice(scrollOff,scrollOff+4);
   if(!info)return<div style={{background:'#000',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
+  const cols=activeArr.length>=2?2:1;
   return(
     <div className="display-root">
+      {/* ── Header ── */}
       <div style={{padding:'18px 24px 14px',borderBottom:'1px solid rgba(255,255,255,.07)',display:'flex',alignItems:'center',gap:16,background:'radial-gradient(ellipse at 50% -40%,rgba(255,94,58,.07) 0%,transparent 60%)'}}>
         {onBack&&(
           <button onClick={onBack} style={{background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:10,padding:'7px 10px',cursor:'pointer',color:'rgba(255,255,255,.55)',display:'flex',alignItems:'center',gap:5,fontSize:12,fontWeight:600,flexShrink:0,transition:'background .15s,color .15s'}}
@@ -1845,35 +1955,101 @@ const DisplayView=({compId,onBack})=>{
         <div style={{flex:1}}><div style={{fontSize:11,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>OG Ninja Comp</div><div style={{fontSize:21,fontWeight:900,letterSpacing:'-.5px',marginTop:1}}>{info.name}</div></div>
         <div className="live-badge"><div className="live-dot"/>Live</div>
       </div>
+
+      {/* ── Active Stage Cards (Presenter Mode) ── */}
       {activeArr.length>0&&(
-        <div style={{background:'rgba(255,94,58,.06)',borderBottom:'1px solid rgba(255,94,58,.14)',padding:'9px 24px',display:'flex',gap:20,overflowX:'auto'}}>
-          {activeArr.map((r,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-              <div className="live-dot"/>
-              <div style={{fontWeight:700,fontSize:14}}>{r.athleteName||'?'}</div>
-              <div style={{fontFamily:'JetBrains Mono',fontSize:15,fontWeight:700,color:'#FF5E3A'}}>{fmtMs(r.startEpoch?nowMs-r.startEpoch:0)}</div>
-              {r.doneCP?.length>0&&<div style={{fontSize:11,color:'rgba(255,255,255,.4)'}}>{r.doneCP.length} CPs</div>}
-            </div>
-          ))}
+        <div style={{padding:'16px 20px',display:'grid',gridTemplateColumns:`repeat(${cols},1fr)`,gap:16}}>
+          {activeArr.map((run)=>{
+            const ath=athMap[run.athleteId]||{name:run.athleteName||'?'};
+            const cat=IGN_CATS.find(c=>c.id===run.catId);
+            const lastCP=run.doneCP&&run.doneCP.length>0?run.doneCP[run.doneCP.length-1]:null;
+            const isCountdown=run.phase==='countdown'&&(run.countdown>0);
+            const elapsed=run.startEpoch?nowMs-run.startEpoch:0;
+            const catColor=cat?.color||'#FF5E3A';
+            return(
+              <div key={run.stNum} style={{position:'relative',background:'var(--card)',borderRadius:20,border:`1px solid ${catColor}30`,overflow:'hidden',boxShadow:`0 8px 32px rgba(0,0,0,.4),0 0 0 1px ${catColor}18`}}>
+                {/* Accent strip */}
+                <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${catColor},${catColor}60)`}}/>
+                {/* Countdown overlay */}
+                {isCountdown&&(
+                  <div style={{position:'absolute',inset:0,background:'rgba(11,11,20,.94)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,borderRadius:20}}>
+                    <div className="timer-grad" style={{fontSize:cols===1?150:110,lineHeight:1,letterSpacing:'-6px',animation:'scaleIn .3s cubic-bezier(.16,1,.3,1)'}}>{run.countdown}</div>
+                    <div style={{fontSize:13,color:'rgba(255,255,255,.5)',letterSpacing:'.18em',textTransform:'uppercase',fontWeight:700,marginTop:8}}>Stage {run.stNum} · {lang==='de'?'Bereit…':'Get ready…'}</div>
+                  </div>
+                )}
+                <div style={{padding:cols===1?'22px 24px':'18px 20px'}}>
+                  {/* Stage + category row */}
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+                    <div style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>Stage {run.stNum}</div>
+                    {cat&&<div style={{fontSize:11,padding:'3px 11px',borderRadius:20,background:`${catColor}20`,border:`1px solid ${catColor}40`,color:catColor,fontWeight:700}}>{catName(cat)}</div>}
+                  </div>
+                  {/* Athlete presenter info */}
+                  <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:16}}>
+                    {ath.photo
+                      ?<img src={ath.photo} style={{width:cols===1?68:56,height:cols===1?68:56,borderRadius:'50%',objectFit:'cover',border:`2.5px solid ${catColor}60`,flexShrink:0,boxShadow:`0 4px 16px rgba(0,0,0,.4)`}}/>
+                      :<div style={{width:cols===1?68:56,height:cols===1?68:56,borderRadius:'50%',background:`radial-gradient(135deg,${catColor}30,${catColor}10)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:cols===1?28:22,flexShrink:0,border:`2px solid ${catColor}30`}}>🥷</div>
+                    }
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:cols===1?26:20,fontWeight:900,letterSpacing:'-.6px',lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{ath.name||run.athleteName}</div>
+                      <div style={{fontSize:12,color:'rgba(255,255,255,.45)',marginTop:4,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                        <span style={{fontFamily:'JetBrains Mono'}}>#{ath.num||'?'}</span>
+                        {ath.country&&<span style={{background:'rgba(255,255,255,.07)',borderRadius:6,padding:'1px 6px',fontSize:11}}>{ath.country}</span>}
+                        {ath.team&&<span style={{color:`${catColor}CC`,fontWeight:600,fontSize:11}}>{ath.team}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Live timer */}
+                  <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:lastCP?10:0}}>
+                    <div className="live-dot"/>
+                    <div style={{fontFamily:'JetBrains Mono',fontSize:cols===1?36:28,fontWeight:700,color:'#FF5E3A',letterSpacing:'-1px'}}>{fmtMs(elapsed)}</div>
+                    {run.livesLeft!=null&&run.livesLeft>0&&(
+                      <div style={{marginLeft:'auto',display:'flex',gap:4,alignItems:'center'}}>
+                        {Array.from({length:run.livesLeft}).map((_,i)=>(
+                          <div key={i} style={{width:8,height:8,borderRadius:'50%',background:'var(--green)',boxShadow:'0 0 6px rgba(52,199,89,.6)'}}/>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Last checkpoint */}
+                  {lastCP&&(
+                    <div style={{marginTop:6,display:'flex',alignItems:'center',gap:7,padding:'6px 10px',background:'rgba(52,199,89,.08)',borderRadius:10,border:'1px solid rgba(52,199,89,.15)'}}>
+                      <span style={{color:'var(--green)',fontSize:14,flexShrink:0}}>✓</span>
+                      <span style={{fontSize:12,color:'rgba(255,255,255,.5)',flexShrink:0}}>CP:</span>
+                      <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,.85)',flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lastCP.name||lastCP}</span>
+                      <span style={{fontSize:11,color:'rgba(255,255,255,.3)',flexShrink:0,fontFamily:'JetBrains Mono'}}>{run.doneCP.length}×</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
+
+      {/* ── Rankings ── */}
       {catsWithData.length>1&&(
-        <div style={{padding:'14px 24px 0',display:'flex',gap:7,overflowX:'auto'}}>
+        <div style={{padding:'10px 20px 0',display:'flex',gap:7,overflowX:'auto'}}>
           {catsWithData.map((c,i)=>(
             <button key={c.id} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:700,border:'none',cursor:'pointer',flexShrink:0,background:i===catIdx?c.color:'rgba(255,255,255,.06)',color:i===catIdx?'#fff':'rgba(255,255,255,.4)',transition:'all .4s'}} onClick={()=>{setCatIdx(i);setScrollOff(0);}}>{catName(c)}</button>
           ))}
         </div>
       )}
-      {!curCat&&<div style={{padding:'80px 24px',textAlign:'center'}}><div style={{fontSize:52,marginBottom:14}}>🥷</div><div style={{fontSize:18,color:'rgba(255,255,255,.35)'}}>{lang==='de'?'Noch keine Ergebnisse':'No results yet'}</div></div>}
+      {!curCat&&activeArr.length===0&&<div style={{padding:'80px 24px',textAlign:'center'}}><div style={{fontSize:52,marginBottom:14}}>🥷</div><div style={{fontSize:18,color:'rgba(255,255,255,.35)'}}>{lang==='de'?'Noch keine Ergebnisse':'No results yet'}</div></div>}
       {curCat&&(
-        <div style={{padding:'20px 24px 40px'}}>
-          <div style={{marginBottom:18}}><div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 16px',borderRadius:20,background:`${curCat.color}20`,border:`1px solid ${curCat.color}30`}}><div style={{width:8,height:8,borderRadius:'50%',background:curCat.color}}/><span style={{fontSize:14,fontWeight:700,color:curCat.color}}>{catName(curCat)}</span></div></div>
-          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
+        <div style={{padding:'18px 20px 40px'}}>
+          <div style={{marginBottom:16}}><div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 14px',borderRadius:20,background:`${curCat.color}20`,border:`1px solid ${curCat.color}30`}}><div style={{width:8,height:8,borderRadius:'50%',background:curCat.color}}/><span style={{fontSize:13,fontWeight:700,color:curCat.color}}>{catName(curCat)}</span></div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
             {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-              <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:16,padding:'16px 20px',borderRadius:18,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
-                <div style={{fontSize:32,width:44,textAlign:'center'}}>{medals[i]}</div>
-                <div style={{flex:1}}><div style={{fontSize:20,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div><div style={{fontSize:12,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num} · {r.doneCP?.length||0} CPs</div></div>
-                <div style={{fontFamily:'JetBrains Mono',fontSize:22,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
+              <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 18px',borderRadius:16,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
+                {a.photo?<img src={a.photo} style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:`1px solid ${curCat.color}40`}}/>:<div style={{fontSize:28,width:40,textAlign:'center'}}>{medals[i]}</div>}
+                <div style={{flex:1}}>
+                  <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div>
+                  <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num} · {r.doneCP?.length||0} CPs{a.country&&` · ${a.country}`}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  {a.photo&&<div style={{fontSize:22,marginBottom:2}}>{medals[i]}</div>}
+                  <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                </div>
               </div>
             );})}
           </div>
@@ -1883,6 +2059,7 @@ const DisplayView=({compId,onBack})=>{
               {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
                 <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderRadius:10,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
                   <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
+                  {a.photo?<img src={a.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                   <div style={{flex:1,fontSize:15,fontWeight:600}}>{a.name}</div>
                   <div style={{fontSize:11,color:'rgba(255,255,255,.35)'}}>{r.doneCP?.length||0} CPs</div>
                   <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:'rgba(255,255,255,.6)'}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
