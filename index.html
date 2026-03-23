@@ -72,8 +72,8 @@ select option{background:#1A1A2C;}
 .btn-coral:hover{box-shadow:0 8px 30px rgba(255,94,58,.46);}
 .btn-ghost{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border);}
 .btn-ghost:hover{background:rgba(255,255,255,.07);color:var(--text);border-color:var(--border2);}
-.btn-fall{background:transparent;color:rgba(255,120,100,.42);border:1px solid rgba(255,94,58,.14);}
-.btn-fall:hover{background:rgba(255,94,58,.07);color:var(--cor);border-color:rgba(255,94,58,.35);}
+.btn-fall{background:rgba(255,59,48,.13);color:rgba(255,80,70,.95);border:1.5px solid rgba(255,59,48,.4);font-weight:700;}
+.btn-fall:hover,.btn-fall:active{background:rgba(255,59,48,.25);color:#ff3b30;border-color:rgba(255,59,48,.7);}
 /* topbar */
 .topbar{position:sticky;top:0;z-index:50;background:rgba(11,11,20,.95);
   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
@@ -189,6 +189,10 @@ const fmtMs=ms=>{if(ms==null||ms<0)return '--:--.---';const m=Math.floor(ms/6000
 // ── FLAG EMOJI HELPER ──────────────────────────────────────
 const toFlag=code=>{if(!code||code.length<2)return '';try{return String.fromCodePoint(...[...code.toUpperCase().slice(0,2)].map(c=>0x1F1E6+c.charCodeAt(0)-65));}catch{return '';}};
 
+// ── COUNTRY DATABASE ──────────────────────────────────────
+const COUNTRIES=[['Afghanistan','AF'],['Albania','AL'],['Algeria','DZ'],['Andorra','AD'],['Angola','AO'],['Argentina','AR'],['Armenia','AM'],['Australia','AU'],['Austria','AT'],['Azerbaijan','AZ'],['Bahamas','BS'],['Bahrain','BH'],['Bangladesh','BD'],['Belarus','BY'],['Belgium','BE'],['Belize','BZ'],['Bolivia','BO'],['Bosnia','BA'],['Brazil','BR'],['Bulgaria','BG'],['Cambodia','KH'],['Cameroon','CM'],['Canada','CA'],['Chile','CL'],['China','CN'],['Colombia','CO'],['Costa Rica','CR'],['Croatia','HR'],['Cuba','CU'],['Cyprus','CY'],['Czech Republic','CZ'],['Denmark','DK'],['Dominican Republic','DO'],['Ecuador','EC'],['Egypt','EG'],['El Salvador','SV'],['Estonia','EE'],['Ethiopia','ET'],['Finland','FI'],['France','FR'],['Georgia','GE'],['Germany','DE'],['Ghana','GH'],['Greece','GR'],['Guatemala','GT'],['Haiti','HT'],['Honduras','HN'],['Hong Kong','HK'],['Hungary','HU'],['Iceland','IS'],['India','IN'],['Indonesia','ID'],['Iran','IR'],['Iraq','IQ'],['Ireland','IE'],['Israel','IL'],['Italy','IT'],['Jamaica','JM'],['Japan','JP'],['Jordan','JO'],['Kazakhstan','KZ'],['Kenya','KE'],['Kosovo','XK'],['Kuwait','KW'],['Kyrgyzstan','KG'],['Latvia','LV'],['Lebanon','LB'],['Libya','LY'],['Liechtenstein','LI'],['Lithuania','LT'],['Luxembourg','LU'],['Malaysia','MY'],['Malta','MT'],['Mexico','MX'],['Moldova','MD'],['Monaco','MC'],['Mongolia','MN'],['Montenegro','ME'],['Morocco','MA'],['Mozambique','MZ'],['Netherlands','NL'],['New Zealand','NZ'],['Nicaragua','NI'],['Nigeria','NG'],['North Korea','KP'],['North Macedonia','MK'],['Norway','NO'],['Oman','OM'],['Pakistan','PK'],['Palestine','PS'],['Panama','PA'],['Paraguay','PY'],['Peru','PE'],['Philippines','PH'],['Poland','PL'],['Portugal','PT'],['Qatar','QA'],['Romania','RO'],['Russia','RU'],['Rwanda','RW'],['Saudi Arabia','SA'],['Senegal','SN'],['Serbia','RS'],['Singapore','SG'],['Slovakia','SK'],['Slovenia','SI'],['South Africa','ZA'],['South Korea','KR'],['Spain','ES'],['Sri Lanka','LK'],['Sudan','SD'],['Sweden','SE'],['Switzerland','CH'],['Syria','SY'],['Taiwan','TW'],['Tajikistan','TJ'],['Tanzania','TZ'],['Thailand','TH'],['Tunisia','TN'],['Turkey','TR'],['Uganda','UG'],['Ukraine','UA'],['United Arab Emirates','AE'],['United Kingdom','GB'],['United States','US'],['Uruguay','UY'],['Uzbekistan','UZ'],['Venezuela','VE'],['Vietnam','VN'],['Yemen','YE'],['Zimbabwe','ZW']];
+const countrySuggest=(q)=>{if(!q||q.length<2)return[];const ql=q.toLowerCase();return COUNTRIES.filter(([name,code])=>name.toLowerCase().startsWith(ql)||code.toLowerCase().startsWith(ql)||name.toLowerCase().includes(ql)).slice(0,7);};
+
 // ── AUTOCOMPLETE STORE (localStorage) ─────────────────────
 const AC_KEYS={names:'ogn-ac-names',teams:'ogn-ac-teams',countries:'ogn-ac-countries'};
 const acLoad=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{return [];}};
@@ -197,6 +201,7 @@ const acSuggest=(k,q)=>{if(!q||q.length<2)return[];const arr=acLoad(k);const ql=
 
 // ── AUTOCOMPLETE INPUT COMPONENT ──────────────────────────
 const AutocompleteInput=({acKey,value,onChange,placeholder,style,onKeyDown,autoFocus,inputStyle})=>{
+  const isCountry=acKey===AC_KEYS.countries;
   const [open,setOpen]=React.useState(false);
   const [sugs,setSugs]=React.useState([]);
   const ref=React.useRef(null);
@@ -204,26 +209,45 @@ const AutocompleteInput=({acKey,value,onChange,placeholder,style,onKeyDown,autoF
     const fn=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false);};
     document.addEventListener('mousedown',fn);return()=>document.removeEventListener('mousedown',fn);
   },[]);
+  const computeSugs=v=>{
+    if(isCountry){const cs=countrySuggest(v);return cs.length?cs:[];}
+    return acSuggest(acKey,v);
+  };
   const handleChange=e=>{
     const v=e.target.value;onChange(e);
-    const s=acSuggest(acKey,v);setSugs(s);setOpen(s.length>0);
+    const s=computeSugs(v);setSugs(s);setOpen(s.length>0);
   };
-  const pick=v=>{onChange({target:{value:v}});setOpen(false);};
+  const pick=(v,isCountryPick,code)=>{
+    if(isCountryPick){onChange({target:{value:code}});}
+    else{onChange({target:{value:v}});}
+    setOpen(false);
+  };
   return(
     <div ref={ref} style={{position:'relative',flex:1,...(style||{})}}>
       <input value={value} onChange={handleChange} placeholder={placeholder} autoFocus={autoFocus}
         style={{width:'100%',...(inputStyle||{})}}
         onKeyDown={e=>{if(e.key==='Escape')setOpen(false);if(onKeyDown)onKeyDown(e);}}
-        onFocus={()=>{const s=acSuggest(acKey,value);if(s.length>0){setSugs(s);setOpen(true);}}}/>
+        onFocus={()=>{const s=computeSugs(value);if(s.length>0){setSugs(s);setOpen(true);}}}/>
       {open&&sugs.length>0&&(
         <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:999,background:'#1C1C28',border:'1px solid var(--border)',borderRadius:10,marginTop:3,boxShadow:'0 8px 24px rgba(0,0,0,.4)',overflow:'hidden'}}>
-          {sugs.map(s=>(
-            <div key={s} onMouseDown={()=>pick(s)} style={{padding:'9px 13px',fontSize:13,cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',alignItems:'center',gap:7,transition:'background .1s'}}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,94,58,.12)'}
-              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-              {s}
-            </div>
-          ))}
+          {isCountry
+            ?sugs.map(([name,code])=>(
+              <div key={code} onMouseDown={()=>pick(name,true,code)} style={{padding:'8px 13px',fontSize:13,cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',alignItems:'center',gap:8,transition:'background .1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,94,58,.12)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <span style={{fontSize:18}}>{toFlag(code)}</span>
+                <span style={{flex:1}}>{name}</span>
+                <span style={{fontSize:11,fontFamily:'JetBrains Mono',color:'var(--muted)',background:'rgba(255,255,255,.06)',borderRadius:5,padding:'1px 6px'}}>{code}</span>
+              </div>
+            ))
+            :sugs.map(s=>(
+              <div key={s} onMouseDown={()=>pick(s)} style={{padding:'9px 13px',fontSize:13,cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,.05)',display:'flex',alignItems:'center',gap:7,transition:'background .1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,94,58,.12)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                {s}
+              </div>
+            ))
+          }
         </div>
       )}
     </div>
@@ -1018,6 +1042,7 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
   const stages=useFbVal(`ogn/${compId}/stages`);
   const stations=useFbVal(`ogn/${compId}/stations`);
   const completedRuns=useFbVal(`ogn/${compId}/completedRuns`);
+  const activeRuns=useFbVal(`ogn/${compId}/activeRuns`);
   const [editing,setEditing]=useState(false);
   const [showQR,setShowQR]=useState(null);
   const [copied,setCopied]=useState(null);
@@ -1025,6 +1050,11 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
   const [showAddAth,setShowAddAth]=useState(false);
   const [quickAth,setQuickAth]=useState({name:'',num:'',cat:'am1',gender:'m',country:'',team:'',photo:null});
   const [addingAth,setAddingAth]=useState(false);
+  const [editingStageName,setEditingStageName]=useState(null); // stNum being renamed
+  const [stageNameDraft,setStageNameDraft]=useState('');
+  const saveStageNameFn=(n)=>{fbSet(`ogn/${compId}/info/stageNames/${n}`,stageNameDraft.trim()||null);setEditingStageName(null);};
+  // Stage occupation: activeRuns that are currently live (not done / not stale)
+  const occupiedStages=new Set(activeRuns?Object.entries(activeRuns).filter(([,r])=>r?.athleteId&&r?.phase!=='done').map(([k])=>parseInt(k,10)):[]);
   const [editObsStage,setEditObsStage]=useState(null);
   const [localObs,setLocalObs]=useState([]);
   const [newObsName,setNewObsName]=useState('');
@@ -1137,9 +1167,23 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
             <div key={n} className="sh-card fade-up" style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
               {/* Stage header */}
               <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,var(--cor),var(--cor2))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#fff',boxShadow:'0 4px 14px rgba(255,94,58,.26)',flexShrink:0}}>{n}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:15}}>Stage {n}</div>
+                <div style={{width:44,height:44,borderRadius:12,background:occupiedStages.has(n)?'linear-gradient(135deg,#ff9500,#ff6000)':'linear-gradient(135deg,var(--cor),var(--cor2))',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:20,color:'#fff',boxShadow:'0 4px 14px rgba(255,94,58,.26)',flexShrink:0,position:'relative'}}>
+                  {n}
+                  {occupiedStages.has(n)&&<div style={{position:'absolute',top:-4,right:-4,width:12,height:12,borderRadius:'50%',background:'var(--green)',border:'2px solid var(--card)',boxShadow:'0 0 6px rgba(52,199,89,.8)'}}/>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  {editingStageName===n
+                    ?<div style={{display:'flex',gap:6,alignItems:'center'}}>
+                       <input value={stageNameDraft} onChange={e=>setStageNameDraft(e.target.value)} placeholder={`Stage ${n}`} autoFocus style={{flex:1,fontSize:13,padding:'4px 8px'}} onKeyDown={e=>{if(e.key==='Enter')saveStageNameFn(n);if(e.key==='Escape')setEditingStageName(null);}}/>
+                       <button className="btn btn-coral" style={{padding:'4px 10px',fontSize:11}} onClick={()=>saveStageNameFn(n)}><I.Check s={12}/></button>
+                       <button className="btn btn-ghost" style={{padding:'4px 8px',fontSize:11}} onClick={()=>setEditingStageName(null)}><I.X s={12}/></button>
+                     </div>
+                    :<div style={{display:'flex',alignItems:'center',gap:5}}>
+                       <div style={{fontWeight:700,fontSize:15}}>{info.stageNames?.[n]||`Stage ${n}`}</div>
+                       <button style={{background:'none',border:'none',cursor:'pointer',padding:2,opacity:.35,display:'flex'}} title="Umbenennen" onClick={()=>{setStageNameDraft(info.stageNames?.[n]||'');setEditingStageName(n);}}><I.Edit s={12}/></button>
+                       {occupiedStages.has(n)&&<span style={{fontSize:9,fontWeight:800,color:'var(--green)',background:'rgba(52,199,89,.15)',border:'1px solid rgba(52,199,89,.3)',borderRadius:6,padding:'1px 6px',letterSpacing:'.05em'}}>LIVE</span>}
+                     </div>
+                  }
                   {cat
                     ?<div style={{fontSize:12,marginTop:2,display:'flex',alignItems:'center',gap:6}}>
                        <span style={{color:cat.color,fontWeight:600}}>{catName(cat)}</span>
@@ -1170,10 +1214,16 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
                 ))}
               </div>
               {/* BIG START BUTTON */}
-              <button className="btn btn-coral" style={{width:'100%',padding:14,fontSize:15,gap:8,marginTop:2}}
-                onClick={()=>{SFX.click();onStage(n);}}>
-                <I.Play s={16}/> Stage {n} starten
-              </button>
+              {occupiedStages.has(n)
+                ?<button className="btn btn-ghost" style={{width:'100%',padding:14,fontSize:14,gap:8,marginTop:2,cursor:'default',opacity:.6,borderColor:'rgba(52,199,89,.3)',color:'var(--green)'}} disabled>
+                    <div style={{width:8,height:8,borderRadius:'50%',background:'var(--green)',boxShadow:'0 0 6px rgba(52,199,89,.8)',animation:'pulse 1.2s infinite'}}/>
+                    {lang==='de'?'Stage läuft — besetzt':'Stage occupied — running'}
+                  </button>
+                :<button className="btn btn-coral" style={{width:'100%',padding:14,fontSize:15,gap:8,marginTop:2}}
+                    onClick={()=>{SFX.click();onStage(n);}}>
+                    <I.Play s={16}/> {info.stageNames?.[n]||`Stage ${n}`} starten
+                  </button>
+              }
               {/* ── Inline obstacle editor ── */}
               {editObsStage===n&&(
                 <div className="scale-in" style={{background:'rgba(255,255,255,.03)',border:'1px solid var(--border)',borderRadius:12,padding:12,display:'flex',flexDirection:'column',gap:7}}>
@@ -1919,7 +1969,7 @@ const ResultsView=({compId,athletes})=>{
                   {a.photo?<img src={a.photo} style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,215,10,.4)',flexShrink:0}}/>:null}
                   <div>
                     <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px'}}>{a.name}{ranked[0].protested&&<span style={{marginLeft:8}}><I.Flag s={13} c="var(--gold)"/></span>}</div>
-                    <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>#{a.num}{a.team&&<span style={{marginLeft:6,color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{toFlag(a.country)} {a.country}</span>}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>#{a.num}{ranked[0].stNum&&<span style={{marginLeft:6,color:'var(--cor)',fontWeight:700,background:'rgba(255,94,58,.1)',borderRadius:5,padding:'1px 6px',fontSize:10}}>S{ranked[0].stNum}</span>}{a.team&&<span style={{marginLeft:6,color:'var(--cor2)',fontWeight:600}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{toFlag(a.country)} {a.country}</span>}</div>
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:12,marginTop:6}}>
@@ -1951,6 +2001,7 @@ const ResultsView=({compId,athletes})=>{
                   </div>
                   <div style={{display:'flex',gap:5,alignItems:'center',marginTop:2,flexWrap:'wrap'}}>
                     <span style={{fontSize:10,fontFamily:'JetBrains Mono',color:'var(--muted)'}}>#{a.num}</span>
+                    {r.stNum&&<span style={{fontSize:9,color:'var(--cor)',fontWeight:700,background:'rgba(255,94,58,.1)',borderRadius:5,padding:'1px 5px',letterSpacing:'.03em'}}>S{r.stNum}</span>}
                     {a.team&&<span style={{fontSize:10,color:'var(--cor2)',fontWeight:700,background:'rgba(255,144,64,.13)',borderRadius:5,padding:'1px 5px'}}>{a.team}</span>}
                     {a.country&&<span style={{fontSize:10,color:'var(--muted)'}}>{toFlag(a.country)} {a.country}</span>}
                   </div>
@@ -2172,9 +2223,11 @@ const DisplayView=({compId,onBack})=>{
   const runList=completedRuns?Object.values(completedRuns):[];
   const athMap=athletesMap||{};
   const catsWithData=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
-  // Build active run array with stage number attached
+  // Build active run array — filter out stale 'done' entries older than 8s (JuryApp cleanup guard)
   const activeArr=activeRuns
-    ?Object.entries(activeRuns).filter(([,r])=>r?.athleteId).map(([stNum,r])=>({stNum,...r}))
+    ?Object.entries(activeRuns)
+      .filter(([,r])=>r?.athleteId&&!(r.phase==='done'&&r.doneAt&&(nowMs-r.doneAt)>8000))
+      .map(([stNum,r])=>({stNum:parseInt(stNum,10),...r}))
     :[];
   // Track done phase start times
   activeArr.forEach(run=>{
@@ -2199,7 +2252,7 @@ const DisplayView=({compId,onBack})=>{
   const multiDispStage=dispStageNums.length>1;
   // For single-stage or overall, keep current scrolling behavior
   const ranked=curCat?computeRanked(runList,curCat.id):[];
-  const top3=ranked.slice(0,3);const visRest=ranked.slice(3).slice(scrollOff,scrollOff+4);
+  const top3=ranked.slice(0,3);const visRest=ranked.slice(3).slice(scrollOff,scrollOff+6);
   if(!info)return<div style={{background:'#000',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><Spinner/></div>;
   const cols=activeArr.length>=2?2:1;
   return(
@@ -2228,6 +2281,8 @@ const DisplayView=({compId,onBack})=>{
             const isCountdown=run.phase==='countdown'&&(run.countdown>0);
             const elapsed=run.startEpoch?nowMs-run.startEpoch:0;
             const catColor=cat?.color||'#FF5E3A';
+            const stageTimeLimit=(()=>{const sl=info.stageLimits?.[run.stNum];return((sl!=null&&sl!=='')?sl:(info.timeLimit||0))*1000;})();
+            const isTimedOut=stageTimeLimit>0&&elapsed>=stageTimeLimit&&run.phase!=='done'&&!isCountdown;
             return(
               <div key={run.stNum} style={{position:'relative',background:'var(--card)',borderRadius:20,border:`1px solid ${catColor}30`,overflow:'hidden',boxShadow:`0 8px 32px rgba(0,0,0,.4),0 0 0 1px ${catColor}18`}}>
                 {/* Accent strip */}
@@ -2236,7 +2291,17 @@ const DisplayView=({compId,onBack})=>{
                 {isCountdown&&(
                   <div style={{position:'absolute',inset:0,background:'rgba(11,11,20,.94)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:10,borderRadius:20}}>
                     <div className="timer-grad" style={{fontSize:cols===1?150:110,lineHeight:1,letterSpacing:'-6px',animation:'scaleIn .3s cubic-bezier(.16,1,.3,1)'}}>{run.countdown}</div>
-                    <div style={{fontSize:13,color:'rgba(255,255,255,.5)',letterSpacing:'.18em',textTransform:'uppercase',fontWeight:700,marginTop:8}}>Stage {run.stNum} · {lang==='de'?'Bereit…':'Get ready…'}</div>
+                    <div style={{fontSize:13,color:'rgba(255,255,255,.5)',letterSpacing:'.18em',textTransform:'uppercase',fontWeight:700,marginTop:8}}>{info.stageNames?.[run.stNum]||`Stage ${run.stNum}`} · {lang==='de'?'Bereit…':'Get ready…'}</div>
+                  </div>
+                )}
+                {/* Timeout overlay */}
+                {isTimedOut&&(
+                  <div style={{position:'absolute',inset:0,background:'rgba(11,11,20,.93)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9,borderRadius:20,gap:8}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'center',width:cols===1?64:52,height:cols===1?64:52,borderRadius:'50%',background:'rgba(255,200,0,.12)',border:'2px solid rgba(255,200,0,.35)'}}><span style={{fontSize:cols===1?32:26}}>⏱</span></div>
+                    <div style={{fontSize:cols===1?28:22,fontWeight:900,color:'var(--gold)',letterSpacing:'-.3px'}}>{lang==='de'?'ZEIT AB!':'TIME UP!'}</div>
+                    <div style={{fontFamily:'JetBrains Mono',fontSize:cols===1?22:18,fontWeight:700,color:'rgba(255,255,255,.7)'}}>{fmtMs(stageTimeLimit)}</div>
+                    {lastCP&&<div style={{fontSize:12,color:'rgba(255,255,255,.45)',display:'flex',alignItems:'center',gap:5,marginTop:2}}><span style={{color:'var(--green)'}}>✓</span>{lang==='de'?'Letzter CP:':'Last CP:'} {lastCP.name}</div>}
+                    <div style={{fontSize:11,color:'rgba(255,255,255,.3)',marginTop:4}}>{run.doneCP?.length||0} CP{(run.doneCP?.length||0)!==1?'s':''} · {ath.name}</div>
                   </div>
                 )}
                 {/* Done result overlay — fades after 3s, shows next athlete after 5s */}
@@ -2289,7 +2354,10 @@ const DisplayView=({compId,onBack})=>{
                 <div style={{padding:cols===1?'22px 24px':'18px 20px'}}>
                   {/* Stage + category row */}
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-                    <div style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>Stage {run.stNum}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:7}}>
+                      <div style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase'}}>Stage {info.stageNames?.[run.stNum]||run.stNum}</div>
+                      {stageTimeLimit>0&&<div style={{fontSize:10,fontWeight:700,color:isTimedOut?'var(--gold)':'rgba(255,255,255,.25)',fontFamily:'JetBrains Mono',background:'rgba(255,255,255,.05)',borderRadius:6,padding:'1px 6px'}}>⏱ {fmtMs(stageTimeLimit).slice(0,-4)}</div>}
+                    </div>
                     {cat&&<div style={{fontSize:11,padding:'3px 11px',borderRadius:20,background:`${catColor}20`,border:`1px solid ${catColor}40`,color:catColor,fontWeight:700}}>{catName(cat)}</div>}
                   </div>
                   {/* Athlete presenter info */}
@@ -2353,7 +2421,7 @@ const DisplayView=({compId,onBack})=>{
           <div style={{padding:'0 20px 14px',display:'grid',gridTemplateColumns:`repeat(${Math.min(strips.length,cols)},1fr)`,gap:12}}>
             {strips.map(({stNum,q,catColor,cat})=>(
               <div key={stNum} style={{background:'rgba(255,255,255,.03)',border:`1px solid ${catColor}20`,borderRadius:14,padding:'10px 14px'}}>
-                <div style={{fontSize:10,fontWeight:800,color:'rgba(255,255,255,.3)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8}}>{lang==='de'?'Nächste':'Up Next'} · Stage {stNum}</div>
+                <div style={{fontSize:10,fontWeight:800,color:'rgba(255,255,255,.3)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8}}>{lang==='de'?'Nächste':'Up Next'} · {info.stageNames?.[stNum]||`Stage ${stNum}`}</div>
                 <div style={{display:'flex',flexDirection:'column',gap:7}}>
                   {q.map((a,i)=>(
                     <div key={a.id} className={i===0?'slide-up-in':''} style={{display:'flex',alignItems:'center',gap:10,animationDelay:i===0?'0s':'0.1s'}}>
@@ -2446,9 +2514,9 @@ const DisplayView=({compId,onBack})=>{
               </div>
               {visRest.length>0&&(
                 <div style={{display:'flex',flexDirection:'column',gap:5}}>
-                  <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+7,ranked.length)}</div>
+                  <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+9,ranked.length)}</div>
                   {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-                    <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderRadius:10,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
+                    <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 14px',borderRadius:8,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
                       <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
                       {a.photo?<img src={a.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                       <div style={{flex:1,minWidth:0}}>
