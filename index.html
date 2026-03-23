@@ -562,16 +562,19 @@ const DragList=({items,onReorder,renderItem,keyFn})=>{
 
 // ── RANKING UTIL ──────────────────────────────────────────
 // Best result per athlete across ALL stages (for overall view)
+const _rankSort=(a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);};
+const _bestRun=(cr)=>{const byA={};cr.filter(r=>r.status!=='dsq').forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});return byA;};
+const _dsqOnly=(cr,byA)=>{const dsqMap={};cr.filter(r=>r.status==='dsq'&&!byA[r.athleteId]).forEach(r=>{dsqMap[r.athleteId]=r;});return Object.values(dsqMap);};
 const computeRanked=(runList,catId)=>{
-  const cr=runList.filter(r=>r.catId===catId&&r.status!=='dsq');const byA={};
-  cr.forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});
-  return Object.values(byA).sort((a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);});
+  const cr=runList.filter(r=>r.catId===catId);
+  const byA=_bestRun(cr);
+  return[...Object.values(byA).sort(_rankSort),..._dsqOnly(cr,byA)];
 };
 // Best result per athlete for a SPECIFIC stage (Option B — per-stage leaderboard)
 const computeRankedStage=(runList,catId,stNum)=>{
-  const cr=runList.filter(r=>r.catId===catId&&r.stNum===stNum&&r.status!=='dsq');const byA={};
-  cr.forEach(r=>{const ex=byA[r.athleteId];const rc=r.doneCP?.length||0,ec=ex?.doneCP?.length||0;if(!ex||rc>ec||(rc===ec&&r.finalTime<(ex.finalTime||Infinity)))byA[r.athleteId]=r;});
-  return Object.values(byA).sort((a,b)=>{const ac=a.doneCP?.length||0,bc=b.doneCP?.length||0;if(ac!==bc)return bc-ac;return(a.finalTime||Infinity)-(b.finalTime||Infinity);});
+  const cr=runList.filter(r=>r.catId===catId&&r.stNum===stNum);
+  const byA=_bestRun(cr);
+  return[...Object.values(byA).sort(_rankSort),..._dsqOnly(cr,byA)];
 };
 
 // ════════════════════════════════════════════════════════════
@@ -2094,8 +2097,8 @@ const ResultsView=({compId,athletes})=>{
               </div>
             );})()}
             {ranked.slice(1).map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};const initials=(a.name||'?')[0].toUpperCase();return(
-              <div key={r.athleteId} className="sh-card fade-up" style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10,animationDelay:`${(i+1)*.04}s`}}>
-                <div style={{flexShrink:0}}>{i<2?<MedalBadge pos={i+1} s={26}/>:<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--muted)'}}>{i+2}</div>}</div>
+              <div key={r.athleteId} className="sh-card fade-up" style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10,animationDelay:`${(i+1)*.04}s`,opacity:r.status==='dsq'?.6:1}}>
+                <div style={{flexShrink:0}}>{r.status==='dsq'?<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,59,80,.12)',border:'1px solid rgba(255,59,80,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:900,color:'#FF3B6B',letterSpacing:'.02em'}}>DSQ</div>:i<2?<MedalBadge pos={i+1} s={26}/>:<div style={{width:26,height:26,borderRadius:'50%',background:'rgba(255,255,255,.05)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--muted)'}}>{i+2}</div>}</div>
                 {a.photo
                   ?<img src={a.photo} style={{width:38,height:38,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:'1.5px solid rgba(255,255,255,.12)'}}/>
                   :<div style={{width:38,height:38,borderRadius:'50%',flexShrink:0,background:'linear-gradient(135deg,rgba(255,94,58,.22),rgba(255,94,58,.08))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:'var(--cor)',border:'1.5px solid rgba(255,94,58,.18)'}}>{initials}</div>
@@ -2118,9 +2121,11 @@ const ResultsView=({compId,athletes})=>{
                   </div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
-                  <div className="timer-grad" style={{fontSize:14}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                  <div className="timer-grad" style={{fontSize:14,color:r.status==='dsq'?'#FF3B6B':undefined}}>{r.status==='dsq'?'DSQ':r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
                   {r.status==='complete'
                     ?<div className="buzzer-badge"><I.Bolt s={11} c="#FFD700"/> Buzzer</div>
+                    :r.status==='dsq'
+                      ?<div style={{fontSize:10,color:'#FF3B6B',fontWeight:600}}>{lang==='de'?'Disqualifiziert':'Disqualified'}</div>
                     :r.fellAt?.name
                       ?<div style={{fontSize:10,color:'var(--red)',fontWeight:600,display:'flex',alignItems:'center',gap:3,maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><I.XCircle s={10} c="var(--red)"/>{r.fellAt.name}</div>
                       :<div style={{fontSize:10,color:'var(--muted)'}}>DNF</div>
@@ -2152,7 +2157,8 @@ const JuryApp=({compId,stNum,onBack})=>{
   const stageAthletesRaw=useFbVal(`ogn/${compId}/stages/${stNum}/athletes`);
   // Per-stage data overrides global with fallback
   const obstacles=stageObstaclesRaw||globalObstacles;
-  const athletesMap=stageAthletesRaw||globalAthletesMap;
+  // Always prefer global athletes (contains all registered athletes across all stages)
+  const athletesMap=globalAthletesMap||stageAthletesRaw;
   const stData=useFbVal(`ogn/${compId}/stations/${stNum}`);
   const completedRuns=useFbVal(`ogn/${compId}/completedRuns`);
   const [phase,setPhase]=useState('wait');
@@ -2674,14 +2680,17 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                       {stRanked.slice(0,6).map((r,i)=>{
                         const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};
                         return(
-                          <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 12px',borderBottom:i<Math.min(stRanked.length,6)-1?'1px solid rgba(255,255,255,.04)':'none'}}>
-                            <div style={{fontSize:11,fontWeight:800,color:i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.3)',width:18,textAlign:'center',flexShrink:0}}>{i+1}</div>
+                          <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 12px',borderBottom:i<Math.min(stRanked.length,6)-1?'1px solid rgba(255,255,255,.04)':'none',opacity:r.status==='dsq'?.55:1}}>
+                            {r.status==='dsq'
+                              ?<div style={{fontSize:9,fontWeight:900,color:'#FF3B6B',width:18,textAlign:'center',flexShrink:0,letterSpacing:'.02em'}}>DSQ</div>
+                              :<div style={{fontSize:11,fontWeight:800,color:i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.3)',width:18,textAlign:'center',flexShrink:0}}>{i+1}</div>
+                            }
                             {a.photo?<img src={a.photo} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{fontSize:12,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.country&&<span style={{marginRight:4}}>{toFlag(a.country)}</span>}{a.name}</div>
                               <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{r.doneCP?.length||0} CPs{r.status==='complete'?<span style={{color:'var(--green)',marginLeft:4}}>✓</span>:r.fellAt?.name?<span style={{marginLeft:4,color:'rgba(255,255,255,.25)'}}>{r.fellAt.name.substring(0,12)}</span>:null}</div>
                             </div>
-                            <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.5)',flexShrink:0}}>{r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                            <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:r.status==='dsq'?'#FF3B6B':i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.5)',flexShrink:0}}>{r.status==='dsq'?'DSQ':r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):'—'}</div>
                           </div>
                         );
                       })}
@@ -2695,16 +2704,16 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
             /* ── Single stage: original full-ranking view ── */
             <>
               <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:18}}>
-                {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-                  <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 18px',borderRadius:16,background:`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${curCat.color}28`,animation:`fadeUp .4s ${i*.1}s both`}}>
-                    {a.photo?<img src={a.photo} style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:`1px solid ${curCat.color}40`}}/>:<MedalBadge pos={i} s={40}/>}
+                {top3.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};const isDsqR=r.status==='dsq';return(
+                  <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:14,padding:'14px 18px',borderRadius:16,background:isDsqR?'rgba(255,59,80,.06)':`linear-gradient(135deg,${curCat.color}18,${curCat.color}06)`,border:`1px solid ${isDsqR?'rgba(255,59,80,.2)':curCat.color+'28'}`,animation:`fadeUp .4s ${i*.1}s both`,opacity:isDsqR?.6:1}}>
+                    {a.photo?<img src={a.photo} style={{width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0,border:`1px solid ${isDsqR?'rgba(255,59,80,.3)':curCat.color+'40'}`}}/>:isDsqR?<div style={{width:40,height:40,borderRadius:'50%',background:'rgba(255,59,80,.12)',border:'1px solid rgba(255,59,80,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'#FF3B6B',flexShrink:0}}>DSQ</div>:<MedalBadge pos={i} s={40}/>}
                     <div style={{flex:1}}>
                       <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num}{a.team&&<span style={{marginLeft:6,fontWeight:600,color:'rgba(255,144,64,.8)'}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{toFlag(a.country)} {a.country}</span>} · {r.doneCP?.length||0} CPs</div>
                     </div>
                     <div style={{textAlign:'right'}}>
-                      {a.photo&&<div style={{marginBottom:2}}><MedalBadge pos={i} s={24}/></div>}
-                      <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:medalColors[i]}}>{r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                      {a.photo&&!isDsqR&&<div style={{marginBottom:2}}><MedalBadge pos={i} s={24}/></div>}
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:isDsqR?'#FF3B6B':medalColors[i]}}>{isDsqR?'DSQ':r.finalTime?fmtMs(r.finalTime):'—'}</div>
                     </div>
                   </div>
                 );})}
@@ -2712,16 +2721,16 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
               {visRest.length>0&&(
                 <div style={{display:'flex',flexDirection:'column',gap:5}}>
                   <div style={{fontSize:10,color:'rgba(255,255,255,.25)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:6}}>Positionen {scrollOff+4}–{Math.min(scrollOff+9,ranked.length)}</div>
-                  {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};return(
-                    <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 14px',borderRadius:8,background:'rgba(255,255,255,.04)',animation:'fadeUp .3s both'}}>
-                      <div style={{fontSize:13,color:'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{scrollOff+4+i}</div>
+                  {visRest.map((r,i)=>{const a=athMap[r.athleteId]||{name:r.athleteName||'?',num:'?'};const isDsqR=r.status==='dsq';return(
+                    <div key={r.athleteId} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 14px',borderRadius:8,background:isDsqR?'rgba(255,59,80,.05)':'rgba(255,255,255,.04)',animation:'fadeUp .3s both',opacity:isDsqR?.6:1}}>
+                      <div style={{fontSize:13,color:isDsqR?'#FF3B6B':'rgba(255,255,255,.35)',width:26,fontWeight:700,textAlign:'center'}}>{isDsqR?'—':scrollOff+4+i}</div>
                       {a.photo?<img src={a.photo} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:15,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
                         {(a.country||a.team)&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:1}}>{a.country&&<span>{toFlag(a.country)} {a.country}</span>}{a.team&&<span style={{marginLeft:5,color:'rgba(255,144,64,.6)'}}>{a.team}</span>}</div>}
                       </div>
-                      <div style={{fontSize:11,color:'rgba(255,255,255,.35)',flexShrink:0}}>{r.doneCP?.length||0} CPs</div>
-                      <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:'rgba(255,255,255,.6)'}}>{r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                      <div style={{fontSize:11,color:'rgba(255,255,255,.35)',flexShrink:0}}>{isDsqR?'':r.doneCP?.length||0+' CPs'}</div>
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:isDsqR?'#FF3B6B':'rgba(255,255,255,.6)'}}>{isDsqR?'DSQ':r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
                     </div>
                   );})}
                 </div>
