@@ -774,7 +774,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           const rows=XLSX.utils.sheet_to_json(ws,{header:1});
           // Skip header row if first cell looks like a header
           const start=(rows[0]&&typeof rows[0][0]==='string'&&isNaN(rows[0][0]))?1:0;
-          const csvLines=rows.slice(start).map(r=>`${r[0]||''},${r[1]||''},${r[2]||''},${r[3]||''}`).join('\n');
+          const csvLines=rows.slice(start).map(r=>`${r[0]||''},${r[1]||''},${r[2]||''},${r[3]||''},${r[4]||''},${r[5]||''}`).join('\n');
           importCSV(si,csvLines);
         }catch{
           // Fallback: try as text
