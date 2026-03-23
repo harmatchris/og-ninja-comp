@@ -2121,7 +2121,7 @@ const ResultsView=({compId,athletes})=>{
                   </div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
-                  <div className="timer-grad" style={{fontSize:14,color:r.status==='dsq'?'#FF3B6B':undefined}}>{r.status==='dsq'?'DSQ':r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                  <div className="timer-grad" style={{fontSize:14,color:r.status==='dsq'?'#FF3B6B':r.status!=='complete'&&r.finalTime>0?'rgba(255,255,255,.55)':undefined}}>{r.status==='dsq'?'DSQ':r.finalTime>0?fmtMs(r.finalTime):t('dnf')}</div>
                   {r.status==='complete'
                     ?<div className="buzzer-badge"><I.Bolt s={11} c="#FFD700"/> Buzzer</div>
                     :r.status==='dsq'
@@ -2690,7 +2690,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                               <div style={{fontSize:12,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.country&&<span style={{marginRight:4}}>{toFlag(a.country)}</span>}{a.name}</div>
                               <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{r.doneCP?.length||0} CPs{r.status==='complete'?<span style={{color:'var(--green)',marginLeft:4}}>✓</span>:r.fellAt?.name?<span style={{marginLeft:4,color:'rgba(255,255,255,.25)'}}>{r.fellAt.name.substring(0,12)}</span>:null}</div>
                             </div>
-                            <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:r.status==='dsq'?'#FF3B6B':i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.5)',flexShrink:0}}>{r.status==='dsq'?'DSQ':r.status==='complete'&&r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                            <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:r.status==='dsq'?'#FF3B6B':r.status==='complete'?(i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.7)'):'rgba(255,255,255,.45)',flexShrink:0}}>{r.status==='dsq'?'DSQ':r.finalTime>0?fmtMs(r.finalTime):'—'}</div>
                           </div>
                         );
                       })}
@@ -2713,7 +2713,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                     </div>
                     <div style={{textAlign:'right'}}>
                       {a.photo&&!isDsqR&&<div style={{marginBottom:2}}><MedalBadge pos={i} s={24}/></div>}
-                      <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:isDsqR?'#FF3B6B':medalColors[i]}}>{isDsqR?'DSQ':r.finalTime?fmtMs(r.finalTime):'—'}</div>
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:700,color:isDsqR?'#FF3B6B':r.status!=='complete'&&r.finalTime>0?'rgba(255,255,255,.5)':medalColors[i]}}>{isDsqR?'DSQ':r.finalTime>0?fmtMs(r.finalTime):'—'}</div>
                     </div>
                   </div>
                 );})}
@@ -2730,7 +2730,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                         {(a.country||a.team)&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:1}}>{a.country&&<span>{toFlag(a.country)} {a.country}</span>}{a.team&&<span style={{marginLeft:5,color:'rgba(255,144,64,.6)'}}>{a.team}</span>}</div>}
                       </div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.35)',flexShrink:0}}>{isDsqR?'':r.doneCP?.length||0+' CPs'}</div>
-                      <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:isDsqR?'#FF3B6B':'rgba(255,255,255,.6)'}}>{isDsqR?'DSQ':r.finalTime?fmtMs(r.finalTime):t('dnf')}</div>
+                      <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:isDsqR?'#FF3B6B':r.status!=='complete'&&r.finalTime>0?'rgba(255,255,255,.4)':'rgba(255,255,255,.6)'}}>{isDsqR?'DSQ':r.finalTime>0?fmtMs(r.finalTime):t('dnf')}</div>
                     </div>
                   );})}
                 </div>
