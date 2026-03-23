@@ -2688,7 +2688,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                             {a.photo?<img src={a.photo} style={{width:24,height:24,borderRadius:'50%',objectFit:'cover',flexShrink:0}}/>:null}
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{fontSize:12,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.country&&<span style={{marginRight:4}}>{toFlag(a.country)}</span>}{a.name}</div>
-                              <div style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{r.doneCP?.length||0} CPs{r.status==='complete'?<span style={{color:'var(--green)',marginLeft:4}}>✓</span>:r.fellAt?.name?<span style={{marginLeft:4,color:'rgba(255,255,255,.25)'}}>{r.fellAt.name.substring(0,12)}</span>:null}</div>
+                              <div style={{fontSize:10,color:'rgba(255,255,255,.35)'}}>{r.doneCP?.length||0} CPs{r.status==='complete'?<span style={{color:'var(--green)',marginLeft:4}}>✓</span>:r.status!=='dsq'&&r.fellAt?.name?<span style={{marginLeft:4,color:'rgba(255,100,80,.8)',fontWeight:600}}>{r.fellAt.name.substring(0,14)}</span>:null}</div>
                             </div>
                             <div style={{fontFamily:'JetBrains Mono',fontSize:11,fontWeight:700,color:r.status==='dsq'?'#FF3B6B':r.status==='complete'?(i===0?medalColors[0]:i===1?medalColors[1]:i===2?medalColors[2]:'rgba(255,255,255,.7)'):'rgba(255,255,255,.45)',flexShrink:0}}>{r.status==='dsq'?'DSQ':r.finalTime>0?fmtMs(r.finalTime):'—'}</div>
                           </div>
@@ -2710,6 +2710,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                     <div style={{flex:1}}>
                       <div style={{fontSize:18,fontWeight:800,letterSpacing:'-.3px'}}>{a.name}</div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.4)',marginTop:2}}>#{a.num}{a.team&&<span style={{marginLeft:6,fontWeight:600,color:'rgba(255,144,64,.8)'}}>{a.team}</span>}{a.country&&<span style={{marginLeft:6}}>{toFlag(a.country)} {a.country}</span>} · {r.doneCP?.length||0} CPs</div>
+                      {r.status!=='complete'&&r.status!=='dsq'&&r.fellAt?.name&&<div style={{fontSize:11,color:'rgba(255,100,80,.85)',fontWeight:600,marginTop:2,display:'flex',alignItems:'center',gap:4}}><I.XCircle s={10} c="rgba(255,100,80,.85)"/>{r.fellAt.name}</div>}
                     </div>
                     <div style={{textAlign:'right'}}>
                       {a.photo&&!isDsqR&&<div style={{marginBottom:2}}><MedalBadge pos={i} s={24}/></div>}
@@ -2728,6 +2729,7 @@ const DisplayView=({compId,onBack,onOpenJury,onBackToCoordinator})=>{
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:15,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
                         {(a.country||a.team)&&<div style={{fontSize:10,color:'rgba(255,255,255,.3)',marginTop:1}}>{a.country&&<span>{toFlag(a.country)} {a.country}</span>}{a.team&&<span style={{marginLeft:5,color:'rgba(255,144,64,.6)'}}>{a.team}</span>}</div>}
+                        {!isDsqR&&r.status!=='complete'&&r.fellAt?.name&&<div style={{fontSize:10,color:'rgba(255,100,80,.8)',fontWeight:600,marginTop:1,display:'flex',alignItems:'center',gap:3}}><I.XCircle s={9} c="rgba(255,100,80,.8)"/>{r.fellAt.name}</div>}
                       </div>
                       <div style={{fontSize:11,color:'rgba(255,255,255,.35)',flexShrink:0}}>{isDsqR?'':r.doneCP?.length||0+' CPs'}</div>
                       <div style={{fontFamily:'JetBrains Mono',fontSize:14,color:isDsqR?'#FF3B6B':r.status!=='complete'&&r.finalTime>0?'rgba(255,255,255,.4)':'rgba(255,255,255,.6)'}}>{isDsqR?'DSQ':r.finalTime>0?fmtMs(r.finalTime):t('dnf')}</div>
