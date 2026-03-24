@@ -1086,6 +1086,9 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
   const [newObsName,setNewObsName]=useState('');
   const [editingAth,setEditingAth]=useState(null);
   const [editAthDraft,setEditAthDraft]=useState(null);
+  const [editTimeLimitStage,setEditTimeLimitStage]=useState(null);
+  const [timeLimitDraft,setTimeLimitDraft]=useState(0);
+  const saveTimeLimit=async(n)=>{const val=timeLimitDraft!=null?timeLimitDraft:0;await fbSet(`ogn/${compId}/info/stageLimits/${n}`,val===0?null:val);setEditTimeLimitStage(null);SFX.complete();};
   if(!info)return<Spinner/>;
   const openObsEdit=(n)=>{
     const stObs=stages?.[n]?.obstacles;
@@ -1264,6 +1267,23 @@ const CoordinatorView=({compId,onBack,onStage,lang,setLang})=>{
                 ))}
                 {athList.length===0&&<div style={{fontSize:11,color:'var(--muted)',padding:'4px 2px'}}>{lang==='de'?'Keine Athleten registriert':'No athletes registered'}</div>}
               </div>
+              {/* Time limit display + inline editor (only for non-occupied stages) */}
+              {!occupiedStages.has(n)&&(editTimeLimitStage===n
+                ?<div className="scale-in" style={{background:'rgba(255,255,255,.03)',border:'1px solid var(--border)',borderRadius:12,padding:12,display:'flex',flexDirection:'column',gap:8}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <div className="lbl" style={{display:'flex',alignItems:'center',gap:5}}><I.Clock s={13}/> {lang==='de'?'Zeitlimit für Stage':'Time limit for Stage'} {n}</div>
+                      <button className="btn btn-ghost" style={{padding:'3px 7px',fontSize:11}} onClick={()=>setEditTimeLimitStage(null)}>{lang==='de'?'Abbrechen':'Cancel'}</button>
+                    </div>
+                    <TimePicker value={timeLimitDraft} onChange={v=>setTimeLimitDraft(v||0)} allowDefault/>
+                    <div style={{fontSize:10,color:'var(--muted)'}}>{lang==='de'?'Standard (aus Setup)':'Default (from setup)'}: {(()=>{const d=info.timeLimit||0;return d===0?(lang==='de'?'Kein Limit':'No limit'):`${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;})()}</div>
+                    <button className="btn btn-coral" style={{width:'100%',padding:'10px',fontSize:13,gap:6}} onClick={()=>saveTimeLimit(n)}><I.Check s={13}/>{lang==='de'?'Speichern':'Save'}</button>
+                  </div>
+                :<button className="btn btn-ghost" style={{width:'100%',padding:'8px 14px',fontSize:12,gap:7,justifyContent:'space-between',marginTop:2}}
+                    onClick={()=>{const cur=info.stageLimits?.[n]!=null?info.stageLimits[n]:(info.timeLimit||0);setTimeLimitDraft(cur);setEditTimeLimitStage(n);}}>
+                    <span style={{display:'flex',alignItems:'center',gap:6}}><I.Clock s={12}/> {lang==='de'?'Zeitlimit':'Time limit'}: <span style={{fontFamily:'JetBrains Mono',color:'var(--gold)'}}>{(()=>{const v=info.stageLimits?.[n]!=null?info.stageLimits[n]:(info.timeLimit||0);return v===0?(lang==='de'?'Kein Limit':'No limit'):`${Math.floor(v/60)}:${String(v%60).padStart(2,'0')}`;})()}</span></span>
+                    <I.Edit s={11} c="var(--muted)"/>
+                  </button>
+              )}
               {/* BIG START BUTTON */}
               {occupiedStages.has(n)
                 ?<button className="btn btn-ghost" style={{width:'100%',padding:14,fontSize:14,gap:8,marginTop:2,cursor:'default',opacity:.6,borderColor:'rgba(52,199,89,.3)',color:'var(--green)'}} disabled>
@@ -2153,11 +2173,11 @@ const ResultsView=({compId,athletes})=>{
   const [pwInput,setPwInput]=useState('');
   const [pwError,setPwError]=useState(false);
   const [editRun,setEditRun]=useState(null);
-  const runList=runs?Object.values(runs):[];
+  const runList=runs?Object.entries(runs).map(([k,v])=>({...v,_fbKey:k})):[];
   const athMap=athletes||{};
   const catsWithRuns=IGN_CATS.filter(c=>runList.some(r=>r.catId===c.id));
   useEffect(()=>{if(!selCat&&catsWithRuns.length>0)setSelCat(catsWithRuns[0].id);},[catsWithRuns.length]);
-  const getRunKey=(r)=>Object.entries(runs||{}).find(([,v])=>v.timestamp===r.timestamp&&v.athleteId===r.athleteId)?.[0];
+  const getRunKey=(r)=>r._fbKey||Object.entries(runs||{}).find(([,v])=>v.timestamp!=null&&v.timestamp===r.timestamp&&v.athleteId===r.athleteId)?.[0];
   const openEdit=(r)=>{if(!editMode)return;const key=getRunKey(r);if(key)setEditRun({key,run:r});};
   const handlePwSubmit=()=>{if(pwInput==='2021'){setEditMode(true);setShowPwModal(false);setPwInput('');setPwError(false);SFX.complete();}else{setPwError(true);SFX.fall();}};
   const EditBtn=({r})=>editMode?<button style={{padding:'4px 8px',borderRadius:7,border:'1px solid rgba(255,200,80,.35)',background:'rgba(255,200,80,.08)',color:'var(--gold)',cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',gap:4,fontSize:11,fontWeight:700,fontFamily:'Inter,sans-serif'}} onClick={e=>{e.stopPropagation();openEdit(r);}}><I.Edit s={12} c="var(--gold)"/></button>:null;
