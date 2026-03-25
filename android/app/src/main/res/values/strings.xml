@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OG Ninja Comp</string>
+    <string name="title_activity_main">OG Ninja Comp</string>
+    <string name="package_name">com.ogninjacomp.app</string>
+    <string name="custom_url_scheme">com.ogninjacomp.app</string>
+</resources>

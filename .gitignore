@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Capacitor build artifacts
+ios/App/Pods/
+ios/App/App/public/
+android/.gradle/
+android/app/build/
+android/build/
+
+# IDE
+.idea/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
