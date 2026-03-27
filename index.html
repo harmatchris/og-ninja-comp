@@ -202,7 +202,7 @@ const acProfileLoad=()=>{try{return JSON.parse(localStorage.getItem('ogn-ac-prof
 const acProfileSave=(name,data)=>{if(!name||!name.trim())return;const p=acProfileLoad();const k=name.trim();p[k]={...(p[k]||{}),...data};localStorage.setItem('ogn-ac-profiles',JSON.stringify(p));};
 
 // ── AUTOCOMPLETE INPUT COMPONENT ──────────────────────────
-const AutocompleteInput=({acKey,value,onChange,placeholder,style,onKeyDown,autoFocus,inputStyle,profileKey,onSelectFull})=>{
+const AutocompleteInput=({acKey,value,onChange,placeholder,style,onKeyDown,autoFocus,inputStyle,profileKey,onSelectFull,extraSugs=[]})=>{
   const profiles=profileKey?acProfileLoad():{};
   const isCountry=acKey===AC_KEYS.countries;
   const [open,setOpen]=React.useState(false);
@@ -214,7 +214,11 @@ const AutocompleteInput=({acKey,value,onChange,placeholder,style,onKeyDown,autoF
   },[]);
   const computeSugs=v=>{
     if(isCountry){const cs=countrySuggest(v);return cs.length?cs:[];}
-    return acSuggest(acKey,v);
+    const base=acSuggest(acKey,v);
+    if(!extraSugs||!extraSugs.length)return base;
+    const ql=(v||'').toLowerCase();
+    const extra=extraSugs.filter(s=>s&&s.toLowerCase().includes(ql)&&!base.includes(s));
+    return[...base,...extra].slice(0,8);
   };
   const handleChange=e=>{
     const v=e.target.value;onChange(e);
@@ -545,11 +549,13 @@ const DragList=({items,onReorder,renderItem,keyFn,onExternalDrop})=>{
   };
   // Touch drag (mobile) — only initiates from .drag-handle
   const onItemTouchStart=(idx,e)=>{if(!e.target.closest('.drag-handle'))return;dragIdx.current=idx;setInsertAt(idx);};
-  const onItemTouchMove=(e)=>{
-    if(dragIdx.current===null)return;
-    try{e.preventDefault();}catch(x){}
-    setInsertAt(getInsertIdx(e.touches[0].clientY));
-  };
+  const onItemTouchMove=null;
+  useEffect(()=>{
+    const el=containerRef.current;if(!el)return;
+    const fn=e=>{if(dragIdx.current===null)return;e.preventDefault();setInsertAt(getInsertIdx(e.touches[0].clientY));};
+    el.addEventListener('touchmove',fn,{passive:false});
+    return()=>el.removeEventListener('touchmove',fn);
+  },[]);
   const onItemTouchEnd=()=>{
     const from=dragIdx.current;let to=insertAt;
     dragIdx.current=null;setInsertAt(null);
@@ -1389,7 +1395,7 @@ const handleDeleteAth=async(a)=>{
                   <div style={{maxHeight:280,overflowY:'auto'}}>
                     <DragList items={localObs} onReorder={arr=>setLocalObs(arr)} keyFn={o=>o.id}
                       onExternalDrop={(data,pos)=>{const name=data.trim();if(!name)return;setLocalObs(obs=>{const a=[...obs];a.splice(pos,0,{id:uid(),name,isCP:true,order:pos});return a.map((x,i)=>({...x,order:i}));});setNewObsName('');SFX.click();}}
-                      renderItem={(o,idx)=>(
+                      renderItem={(o,idx)=>o.type==='section'?(<div data-drag-item style={{display:'flex',alignItems:'center',gap:6,padding:'5px 4px',borderRadius:8,background:'rgba(255,153,0,0.08)',borderLeft:'3px solid var(--accent)',marginBottom:2}}><div className="drag-handle" style={{cursor:'grab',color:'var(--dim)',padding:'4px 5px',borderRadius:6,display:'flex',alignItems:'center',touchAction:'none'}}>⠿</div><span style={{fontSize:14}}>🏁</span><input value={o.name} onChange={e=>setLocalObs(lo=>lo.map(x=>x.id===o.id?{...x,name:e.target.value}:x))} style={{flex:1,background:'transparent',border:'1px solid rgba(255,153,0,0.3)',borderRadius:6,padding:'3px 8px',color:'var(--fg)',fontSize:13}}/><label style={{display:'flex',alignItems:'center',gap:3,fontSize:11,color:'var(--dim)',flexShrink:0}}><span>{lang==='de'?'Pause':'Rest'}</span><input type="number" min={0} max={60} value={o.restTime||0} onChange={e=>setLocalObs(lo=>lo.map(x=>x.id===o.id?{...x,restTime:+e.target.value}:x))} style={{width:36,background:'transparent',border:'1px solid rgba(255,153,0,0.3)',borderRadius:4,padding:'2px 3px',color:'var(--fg)',fontSize:11,textAlign:'center'}}/><span>s</span></label><button onClick={()=>setLocalObs(lo=>lo.filter(x=>x.id!==o.id))} style={{background:'none',border:'none',color:'var(--danger)',cursor:'pointer',padding:'2px 8px',fontSize:16,flexShrink:0}}>×</button></div>):(
                         <div style={{padding:'4px 6px',display:'flex',alignItems:'center',gap:5}}>
                           <div className="drag-handle"><I.Drag s={14}/></div>
                           <button style={{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',lineHeight:1,color:o.isCP?'var(--cor)':'var(--dim)',flexShrink:0,display:'flex',alignItems:'center'}} onClick={()=>setLocalObs(obs=>obs.map((x,i)=>i===idx?{...x,isCP:!x.isCP}:x))} title={o.isCP?'CP aktiv':'Kein CP'}>{o.isCP?<I.Target s={14} c="var(--cor)"/>:<I.Target s={14} c="rgba(255,255,255,.2)"/>}</button>
@@ -1403,7 +1409,7 @@ const handleDeleteAth=async(a)=>{
                     onDragStart={e=>{if(!e.target.closest('.drag-handle')||!newObsName.trim()){e.preventDefault();return;}e.dataTransfer.setData('dnd-obs-ext',newObsName.trim());e.dataTransfer.effectAllowed='copy';}}>
                     <div className="drag-handle" title={lang==='de'?'Ziehen zum Einfügen':'Drag to insert'} style={{opacity:newObsName.trim()?1:0.3,cursor:newObsName.trim()?'grab':'default'}}><I.Drag s={14}/></div>
                     <input value={newObsName} onChange={e=>setNewObsName(e.target.value)} placeholder={lang==='de'?'Neues Hindernis…':'New obstacle…'} style={{flex:1,padding:'6px 10px',fontSize:12,borderRadius:8}} onKeyDown={e=>{if(e.key==='Enter')addLocalObs();}}/>
-                    <button className="btn btn-ghost" style={{padding:'6px 11px',fontSize:12,gap:4,flexShrink:0}} onClick={addLocalObs}><I.Plus s={12}/>{lang==='de'?'Hinzu':'Add'}</button>
+                    <button className="btn btn-ghost" style={{padding:'6px 11px',fontSize:12,gap:4,flexShrink:0}} onClick={addLocalObs}><I.Plus s={12}/>{lang==='de'?'Hinzu':'Add'}</button><button className="btn btn-ghost" style={{padding:'6px 10px',fontSize:12,gap:3,flexShrink:0}} onClick={()=>setLocalObs(lo=>[...lo,{id:'sec'+Date.now(),name:lang==='de'?'Plattform':'Platform',type:'section',isCP:false,order:lo.length,restTime:30}])}>🏁 {lang==='de'?'Plattform':'Platform'}</button>
                   </div>
                   <div style={{display:'flex',gap:6}}>
                     <button className="btn btn-coral" style={{flex:1,padding:'10px',fontSize:13,gap:6}} onClick={saveObsEdit}><I.Check s={13}/>{lang==='de'?'Speichern':'Save'}</button>
@@ -1639,6 +1645,9 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,totalLivesLeft,acti
   const obstArr=obstacles?Object.values(obstacles).sort((a,b)=>a.order-b.order):[];
   const cpObst=obstArr.filter(o=>o.isCP);
   const [doneCP,setDoneCP]=useState([]);
+  const [restSecs,setRestSecs]=useState(0);
+  const [restActive,setRestActive]=useState(false);
+  const restIntervalRef=useRef(null);
   const doneCPRef=useRef([]);
   const livesRef=useRef(lives);
   useEffect(()=>{livesRef.current=lives;},[lives]);
@@ -1693,7 +1702,7 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,totalLivesLeft,acti
     if(splitTimerRef.current)clearTimeout(splitTimerRef.current);
     splitTimerRef.current=setTimeout(()=>setShowSplit(false),3500);
     if(nd.length>=cpObst.length)setTimeout(()=>onComplete({doneCP:nd,finalTime:nd[nd.length-1].time,lives,protested}),400);
-    else if(onRefillLives&&nextCp.type==='section')onRefillLives(nextCp.lives); // section marker: refill lives
+    else if(onRefillLives&&nextCp.type==='section'){onRefillLives(nextCp.lives);if(nextCp.restTime>0){clearInterval(restIntervalRef.current);setRestSecs(nextCp.restTime);setRestActive(true);let s=nextCp.restTime;restIntervalRef.current=setInterval(()=>{s--;setRestSecs(s);if(s<=0){clearInterval(restIntervalRef.current);setRestActive(false);}},1000);}} // section marker: refill lives
   };
   const handleFall=()=>{
     SFX.fall();
@@ -1755,7 +1764,7 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,totalLivesLeft,acti
         </div>
       )}
 
-      {/* CP pills track with fall indicators */}
+      {restActive&&(<div style={{position:'absolute',top:8,right:8,left:8,background:'rgba(0,0,0,0.88)',borderRadius:12,padding:'12px 16px',zIndex:20,display:'flex',flexDirection:'column',alignItems:'center',gap:4,border:'2px solid var(--accent)'}}><div style={{fontSize:11,color:'var(--dim)',letterSpacing:1,textTransform:'uppercase'}}>{lang==='de'?'Restzeit auf Plattform':'Rest time on platform'}</div><div style={{fontSize:56,fontWeight:900,color:restSecs<=5?'#ff4444':'var(--accent)',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{restSecs}</div><div style={{fontSize:12,color:'var(--dim)'}}>s</div><button onClick={()=>{clearInterval(restIntervalRef.current);setRestActive(false);}} style={{marginTop:6,background:'none',border:'1px solid rgba(255,255,255,0.2)',borderRadius:20,padding:'4px 16px',color:'var(--dim)',cursor:'pointer',fontSize:12}}>{lang==='de'?'Überspringen':'Skip'}</button></div>)}{/* CP pills track with fall indicators */}
       <div style={{padding:'4px 16px 8px'}}>
         <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
           {cpObst.map((o,i)=>{
