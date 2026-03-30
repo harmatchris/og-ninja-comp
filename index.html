@@ -2010,13 +2010,14 @@ const JuryActive=({compId,stNum,athlete,obstacles,info,lives,totalLivesLeft,acti
             <div>{isEndPlat?(lang==='de'?'SEGMENT ENDE':'SEGMENT END'):isStartPlat?(lang==='de'?'SEGMENT START':'SEGMENT START'):'CHECKPOINT'}</div>
             {nextCp&&<div style={{fontSize:15,opacity:.82,fontWeight:600,letterSpacing:'.01em'}}>{nextCp.name}</div>}
             {isEndPlat&&<div style={{fontSize:11,color:'rgba(255,200,0,.7)',letterSpacing:'.1em',textTransform:'uppercase',marginTop:2}}>{lang==='de'?'⬛ Leben werden aufgefüllt':'⬛ Lives will refill'}</div>}
+            <div style={{fontSize:9,opacity:.28,fontWeight:400,letterSpacing:'.04em',marginTop:3,lineHeight:1,textTransform:'none'}}>{lang==='de'?'halten = rückgängig':'hold = undo'}</div>
           </button>);})()}
           <div style={{display:'flex',gap:8}}>
             <button className="btn btn-fall" style={{flex:1,padding:14,fontSize:13,gap:7}} onClick={handleFall}>
               <I.X s={14}/> {lang==='de'?'Fall':'Fall'}
             </button>
-            <button className="btn btn-fall" style={{flex:1,padding:14,fontSize:13,gap:7,borderColor:'rgba(255,200,0,.2)',color:'rgba(255,200,80,.8)'}} onClick={handleStop}>
-              <I.StopOct s={14}/> {lang==='de'?'Abbrechen':'Stop run'}
+            <button className="btn btn-ghost" style={{padding:'9px 14px',fontSize:11,gap:5,opacity:.78}} onClick={handleStop}>
+              <I.StopOct s={12}/> {lang==='de'?'Abbrechen':'Stop run'}
             </button>
           </div>
           <button className="btn btn-ghost" style={{width:'100%',padding:10,fontSize:12,gap:6,
