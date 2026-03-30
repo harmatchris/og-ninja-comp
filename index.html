@@ -1268,7 +1268,7 @@ const HomeView=({onOpen,lang,setLang})=>{
   const [creating,setCreating]=useState(false);
   const [showRulebook,setShowRulebook]=useState(false);
   if(creating)return<SetupWizard onDone={id=>{setCreating(false);onOpen(id);}} onBack={()=>setCreating(false)}/>;
-  if(showRulebook)return<div style={{minHeight:'100vh'}}><TopBar title={t('rulebook')} left={<button className="btn btn-ghost" onClick={()=>setShowRulebook(false)}><I.ChevronLeft s={18}/></button>} right={<button className="btn btn-ghost" style={{padding:'5px 11px',fontSize:12,fontWeight:700}} onClick={()=>setLang(lang==='de'?'en':'de')}>{t('lang')}</button>}/><LangCtx.Provider value={lang}><Regelwerk/></LangCtx.Provider></div>;
+  if(showRulebook)return<div style={{minHeight:'100vh'}}><TopBar title={t('rulebook')} onBack={()=>{SFX.click();setShowRulebook(false)}} right={<button className="btn btn-ghost" style={{padding:'5px 11px',fontSize:12,fontWeight:700}} onClick={()=>setLang(lang==='de'?'en':'de')}>{t('lang')}</button>}/><LangCtx.Provider value={lang}><Regelwerk/></LangCtx.Provider></div>;
   const list=comps?Object.entries(comps).map(([id,v])=>({id,...v})).sort((a,b)=>(b.info?.createdAt||0)-(a.info?.createdAt||0)):[];
   return(
     <div style={{minHeight:'100vh'}}>
