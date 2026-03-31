@@ -2102,6 +2102,8 @@ const ResetCountdown=({frozenTime,onDone})=>{
 const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConfirm,onUseLive,onCancel})=>{
   const {t,lang}=useLang();
   const [selCount,setSelCount]=useState(doneCP.length);
+  const [manualTimeStr,setManualTimeStr]=useState('');
+  useEffect(()=>{setManualTimeStr('');},[selCount]);
   const hasLives=mode==='lives';
   // Show last 2 + next 2 CPs around current done count
   const rangeStart=Math.max(0,doneCP.length-2);
@@ -2114,6 +2116,8 @@ const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConf
     return ct!=null?ct:currentTime;
   };
   const officialTime=getTime(selCount);
+  const isLaterCP=selCount>doneCP.length;
+  const parseMs=str=>{const r=str.match(/^(\d+):(\d{2})\.(\d{1,3})$/);if(!r)return null;return +r[1]*60000+ +r[2]*1000+ +r[3].padEnd(3,'0');};
   // Obstacle selector: show all obstacles after last confirmed CP
   const lastCpOrder=selCount>0?(cpObst[selCount-1]?.order??-1):-1;
   const candidateObst=obstArr.filter(o=>o.order>lastCpOrder);
@@ -2178,6 +2182,16 @@ const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConf
           <div className="lbl" style={{marginBottom:4}}>{t('officialTime')}</div>
           <div className="timer-grad" style={{fontSize:32}}>{fmtMs(officialTime)}</div>
         </div>
+        {isLaterCP&&(
+          <div style={{margin:'10px 0 6px',background:'rgba(255,160,0,.08)',border:'1px solid rgba(255,160,0,.25)',borderRadius:10,padding:'10px 12px'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'rgba(255,160,0,.8)',letterSpacing:'.07em',marginBottom:6}}>{lang==='de'?'OFFIZIELLE ZEIT (MANUELL)':'OFFICIAL TIME (MANUAL)'}</div>
+            <input type="text" value={manualTimeStr||fmtMs(officialTime)}
+              onChange={e=>setManualTimeStr(e.target.value)}
+              placeholder="00:00.000"
+              style={{width:'100%',background:'rgba(255,255,255,.07)',border:'1px solid rgba(255,160,0,.35)',borderRadius:8,padding:'8px 10px',fontSize:22,color:'#fff',fontFamily:'JetBrains Mono,monospace',textAlign:'center',boxSizing:'border-box'}}/>
+            <div style={{fontSize:10,color:'var(--muted)',marginTop:5}}>{lang==='de'?'Exakte Zeit eingeben (MM:SS.mmm)':'Enter exact time (MM:SS.mmm)'}</div>
+          </div>
+        )}
         {hasLives&&lives>1&&onUseLive&&(
           <button className="btn btn-coral" style={{width:'100%',padding:13,marginBottom:8,gap:8}}
             onClick={()=>onUseLive({selCount,time:officialTime})}>
@@ -2186,7 +2200,7 @@ const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConf
         )}
         <button className="btn" style={{width:'100%',padding:13,marginBottom:8,gap:8,
           background:'rgba(255,59,48,.1)',color:'var(--red)',border:'1px solid rgba(255,59,48,.2)'}}
-          onClick={()=>onConfirm({selCount,time:officialTime,fellAtObst})}>
+          onClick={()=>onConfirm({selCount,time:(isLaterCP&&parseMs(manualTimeStr||fmtMs(officialTime)))||officialTime,fellAtObst})}>
           <I.Check s={15}/> {lang==='de'?'Fall bestätigen (DNF)':'Confirm fall (DNF)'}
         </button>
         <button className="btn btn-ghost" style={{width:'100%',padding:12}} onClick={onCancel}>
@@ -2200,104 +2214,28 @@ const FallModal=({athlete,doneCP,cpObst,obstArr=[],currentTime,mode,lives,onConf
 // ════════════════════════════════════════════════════════════
 // JURY — STOP MODAL (timer keeps running behind overlay)
 // ════════════════════════════════════════════════════════════
-const StopModal=({athlete,doneCP,cpObst,obstArr=[],time,reason,onConfirm,onCancel})=>{
+const StopModal=({athlete,isTimeout,onRestart,onSwitchAth,onCancel})=>{
   const {lang}=useLang();
-  const [selCount,setSelCount]=useState(doneCP.length);
-  const [isDsq,setIsDsq]=useState(false);
-  const isTimeout=reason==='timeout';
-  // Official time = selected CP's recorded time, else fallback
-  const getSelTime=()=>{
-    if(selCount===0)return time;
-    const ct=doneCP[selCount-1]?.time;
-    return ct!=null?ct:time;
-  };
-  // Obstacle selector: obstacles after last confirmed CP
-  const lastCpOrder=selCount>0?(cpObst[selCount-1]?.order??-1):-1;
-  const candidateObst=obstArr.filter(o=>o.order>lastCpOrder);
-  const [fellAtObstId,setFellAtObstId]=useState(()=>candidateObst[0]?.id??null);
-  useEffect(()=>{setFellAtObstId(candidateObst[0]?.id??null);},[selCount]);
-  const fellAtObst=obstArr.find(o=>o.id===fellAtObstId)||null;
   return(
-    <div className="modal-overlay">
-      <div className="modal-sheet" onClick={e=>e.stopPropagation()}>
-        <div style={{textAlign:'center',marginBottom:12}}>
-          <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><div style={{width:52,height:52,borderRadius:'50%',background:isTimeout?'rgba(255,200,0,.12)':'rgba(255,59,48,.12)',border:`2px solid ${isTimeout?'rgba(255,200,0,.3)':'rgba(255,59,48,.3)'}`,display:'flex',alignItems:'center',justifyContent:'center'}}>{isTimeout?<I.Clock s={28} c="var(--gold)"/>:<I.StopOct s={28} c="var(--red)"/>}</div></div>
-          <div style={{fontSize:20,fontWeight:900}}>{isTimeout?(lang==='de'?'Zeitlimit erreicht':'Time limit reached'):(lang==='de'?'Lauf abbrechen':'Stop run')}</div>
-          <div style={{fontSize:13,color:'var(--muted)',marginTop:4}}>{athlete.name} · #{athlete.num}</div>
+    <div style={{position:'fixed',inset:0,zIndex:900,background:'rgba(0,0,0,.85)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',overflowY:'auto',padding:'20px 16px 40px'}}>
+      <div style={{width:'100%',maxWidth:440}}>
+        <div style={{textAlign:'center',marginBottom:24,padding:'0 8px'}}>
+          <div style={{fontSize:20,fontWeight:900,lineHeight:1.25,overflowWrap:'break-word'}}>{isTimeout?(lang==='de'?'Zeitlimit erreicht':'Time limit reached'):(lang==='de'?'Lauf abbrechen':'Stop run')}</div>
+          <div style={{fontSize:13,color:'var(--muted)',marginTop:5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{athlete.name} · #{athlete.num}</div>
         </div>
-        <div className="sh-card" style={{padding:14,marginBottom:12}}>
-          <div className="lbl" style={{marginBottom:8}}>{lang==='de'?'Letzter erreichter Checkpoint':'Last checkpoint reached'}</div>
-          <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12}}>
-            <button className={`chip${selCount===0?' active':''}`}
-              style={{justifyContent:'space-between',padding:'9px 14px'}}
-              onClick={()=>setSelCount(0)}>
-              <span style={{fontWeight:600,color:'var(--text)'}}>⛔ {lang==='de'?'Keiner':'None'}</span>
-              <span style={{fontSize:11,color:'var(--muted)',fontFamily:'JetBrains Mono'}}>—</span>
-            </button>
-            {cpObst.map((cp,i)=>{
-              const reached=i<doneCP.length;
-              const cpTime=reached?doneCP[i]?.time:null;
-              const isSel=selCount===i+1;
-              return(
-                <button key={cp.id} className={`chip${isSel?' active':''}`}
-                  style={{justifyContent:'space-between',padding:'9px 14px',opacity:reached?1:.62,
-                    background:isSel?'rgba(255,94,58,.22)':reached?'rgba(255,255,255,.06)':'rgba(255,255,255,.02)'}}
-                  onClick={()=>setSelCount(i+1)}>
-                  <span style={{fontWeight:600,color:'var(--text)'}}>
-                    {reached&&<span style={{color:'var(--cor)',marginRight:5,fontSize:10}}>✓</span>}
-                    {i+1}. {cp.name}
-                  </span>
-                  <span style={{fontSize:12,fontFamily:'JetBrains Mono',fontWeight:700,color:reached?'var(--text)':'var(--dim)',flexShrink:0,marginLeft:8}}>
-                    {cpTime!=null?fmtMs(cpTime):'—'}
-                  </span>
-                </button>
-              );
-            })}
+        <div style={{background:'rgba(255,200,80,.06)',border:'1px solid rgba(255,200,80,.22)',borderRadius:14,padding:'14px 16px',marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:'rgba(255,200,80,.7)',letterSpacing:'.08em',marginBottom:12}}>{lang==='de'?'LAUF KORRIGIEREN':'CORRECT RUN'}</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn" style={{flex:1,minWidth:130,padding:'10px 12px',gap:6,background:'rgba(255,200,80,.12)',border:'1px solid rgba(255,200,80,.3)',color:'#FFD060',fontWeight:700,fontSize:13}} onClick={onRestart}><I.RefreshCw s={13}/> {lang==='de'?'Nochmal starten':'Restart run'}</button>
+            {onSwitchAth&&<button className="btn" style={{flex:1,minWidth:130,padding:'10px 12px',gap:6,background:'rgba(180,180,200,.07)',border:'1px solid rgba(180,180,200,.18)',fontSize:13,fontWeight:600}} onClick={onSwitchAth}><I.User s={13}/> {lang==='de'?'Athlet wechseln':'Switch athlete'}</button>}
           </div>
-          {obstArr.length>0&&(
-            <div style={{marginBottom:12}}>
-              <div className="lbl" style={{marginBottom:7}}>{lang==='de'?'Weitest erreichtes Hindernis:':'Furthest obstacle reached:'}</div>
-              {candidateObst.length===0
-                ?<div style={{fontSize:12,color:'var(--dim)',padding:'4px 0'}}>—</div>
-                :<div style={{display:'flex',gap:5,overflowX:'auto',paddingBottom:2}}>
-                  {candidateObst.map(o=>(
-                    <button key={o.id} className={`chip${fellAtObstId===o.id?' active':''}`}
-                      style={{flexShrink:0,fontSize:12,padding:'5px 11px',justifyContent:'center'}}
-                      onClick={()=>setFellAtObstId(o.id)}>
-                      {o.name}
-                    </button>
-                  ))}
-                </div>
-              }
-            </div>
-          )}
-          <div className="lbl" style={{marginBottom:4}}>{lang==='de'?'Offizielle Zeit':'Official time'}</div>
-          <div className="timer-grad" style={{fontSize:32}}>{fmtMs(getSelTime())}</div>
+          <div style={{fontSize:11,color:'var(--muted)',marginTop:9,lineHeight:1.45}}>{lang==='de'?'Das Ergebnis wird gelöscht und der Lauf neu gestartet.':'Result will be cleared and run restarted.'}</div>
         </div>
-        <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',marginBottom:10}}>
-          {lang==='de'?'Checkpoint korrigieren falls Jury-Fehler passiert ist.':'Adjust checkpoint if jury error occurred.'}
-        </div>
-        <button
-          style={{width:'100%',padding:'10px 14px',fontSize:13,gap:8,marginBottom:10,display:'flex',alignItems:'center',justifyContent:'space-between',borderRadius:12,border:`1px solid ${isDsq?'rgba(255,59,80,.45)':'rgba(255,255,255,.1)'}`,background:isDsq?'rgba(255,59,80,.12)':'rgba(255,255,255,.04)',color:isDsq?'#FF3B6B':'var(--muted)',cursor:'pointer',fontWeight:700,fontFamily:'Inter,sans-serif'}}
-          onClick={()=>setIsDsq(p=>!p)}>
-          <span style={{display:'flex',alignItems:'center',gap:7}}><I.XCircle s={14} c={isDsq?'#FF3B6B':'var(--muted)'}/>{lang==='de'?'Als DSQ markieren':'Mark as DSQ'}</span>
-          {isDsq&&<span style={{fontSize:11,fontWeight:800,letterSpacing:'.05em'}}>✓ DSQ</span>}
-        </button>
-        <button className="btn btn-coral" style={{width:'100%',padding:13,gap:8,marginBottom:8}}
-          onClick={()=>onConfirm({selCount,time:getSelTime(),fellAtObst,dsq:isDsq})}>
-          <I.Check s={15}/> {lang==='de'?'Bestätigen & speichern':'Confirm & save'}
-        </button>
-        <button className="btn btn-ghost" style={{width:'100%',padding:12}} onClick={onCancel}>
-          ↩ {lang==='de'?'Zurück zum Lauf':'Back to run'}
-        </button>
+        <button className="btn btn-ghost" style={{width:'100%',padding:'11px 16px',fontSize:13,gap:8}} onClick={onCancel}><I.RotateCcw s={13}/> {lang==='de'?'Zurück zum Lauf':'Back to run'}</button>
       </div>
     </div>
   );
 };
-
-// ════════════════════════════════════════════════════════════
-// JURY — DONE
-// ════════════════════════════════════════════════════════════
 const JuryDone=({athlete,result,cat,onNext,onRestart,onSwitchAth})=>{
   const {t,lang,catName}=useLang();
   const ok=result.status==='complete';
@@ -2909,8 +2847,7 @@ const JuryApp=({compId,stNum,onBack})=>{
           onCancel={handleFallCancel}/>
       )}
       {stopModal&&phase==='active'&&(
-        <StopModal athlete={currentAth} doneCP={stopModal.doneCP||[]} cpObst={cpObst} obstArr={obstArr} time={stopModal.time} reason={stopModal.reason}
-          onConfirm={handleStopConfirm} onCancel={handleStopCancel}/>
+        <StopModal athlete={currentAth} isTimeout={stopModal.reason==='timeout'} onRestart={handleRestartRun} onSwitchAth={handleSwitchAth} onCancel={handleStopCancel}/>
       )}
     </div>
   );
