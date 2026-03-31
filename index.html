@@ -2231,7 +2231,7 @@ const StopModal=({athlete,isTimeout,onRestart,onSwitchAth,onCancel})=>{
           </div>
           <div style={{fontSize:11,color:'var(--muted)',marginTop:9,lineHeight:1.45}}>{lang==='de'?'Das Ergebnis wird gelöscht und der Lauf neu gestartet.':'Result will be cleared and run restarted.'}</div>
         </div>
-        <button className="btn btn-ghost" style={{width:'100%',padding:'11px 16px',fontSize:13,gap:8}} onClick={onCancel}><I.RotateCcw s={13}/> {lang==='de'?'Zurück zum Lauf':'Back to run'}</button>
+        <button className="btn btn-ghost" style={{width:'100%',padding:'11px 16px',fontSize:13,gap:8}} onClick={onCancel}><I.ArrowLeft s={13}/> {lang==='de'?'Zurück zum Lauf':'Back to run'}</button>
       </div>
     </div>
   );
