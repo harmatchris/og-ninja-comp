@@ -171,6 +171,9 @@ select option{background:#1A1A2C;}
 </head>
 <body>
 <style>
+@keyframes skillFlash{0%{opacity:.5;transform:scale(.97)}40%{opacity:1;transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+@keyframes skillNotif{0%{opacity:0;transform:translateY(-8px) scale(.95)}15%{opacity:1;transform:translateY(0) scale(1)}85%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-4px) scale(.97)}}
+@keyframes countUp{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
 @keyframes bolt-shiver{0%{transform:scale(1) rotate(0deg) translateY(0);}8%{transform:scale(1.14) rotate(-7deg) translateY(-5px);}16%{transform:scale(.92) rotate(6deg) translateY(3px);}24%{transform:scale(1.11) rotate(-5deg) translateY(-4px);}32%{transform:scale(.95) rotate(8deg) translateY(2px);}40%{transform:scale(1.08) rotate(-6deg) translateY(-2px);}48%{transform:scale(.97) rotate(5deg) translateY(3px);}56%{transform:scale(1.05) rotate(-3deg) translateY(-1px);}72%{transform:scale(1.02) rotate(-1deg) translateY(-1px);}100%{transform:scale(1) rotate(0deg) translateY(0);}}
 @keyframes glow-throb{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:.72;transform:scale(1.22);}}
 @keyframes spark{0%{opacity:0;transform:translate(0,0) scale(0);}25%{opacity:1;transform:translate(calc(var(--dx)*.4),calc(var(--dy)*.4)) scale(1);}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2);}}
@@ -1221,7 +1224,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           <div style={{marginTop:14,background:`rgba(52,199,89,${info.skillPhase?.enabled?.07:.04})`,border:`1px solid ${info.skillPhase?.enabled?'rgba(52,199,89,.4)':'rgba(52,199,89,.2)'}`,borderRadius:12,padding:'12px 14px',transition:'all .2s'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:18}}>🏃</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13" cy="4" r="2"/><path d="M10.5 9l-2.5 5h4l2 4"/><path d="M8.5 21l2-4M14.5 13l2 4-3.5 1.5"/></svg>
                 <div>
                   <div style={{fontSize:13,fontWeight:700,color:'var(--green)'}}>{lang==='de'?'Skill Phase':'Skill Phase'}</div>
                   <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{lang==='de'?'Qualifikation vor dem Stage-Wettkampf':'Qualification before stage competition'}</div>
@@ -1349,7 +1352,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
 
       {step===3&&info.skillPhase?.enabled&&(
         <div className="section fade-up" style={{flex:1}}>
-          <div className="lbl">🏃 {lang==='de'?'Skill Phase Konfiguration':'Skill Phase Configuration'}</div>
+          <div className="lbl" style={{display:'flex',alignItems:'center',gap:6}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13" cy="4" r="2"/><path d="M10.5 9l-2.5 5h4l2 4"/><path d="M8.5 21l2-4M14.5 13l2 4-3.5 1.5"/></svg> {lang==='de'?'Skill Phase Konfiguration':'Skill Phase Configuration'}</div>
 
           {/* Type */}
           <div className="lbl" style={{marginBottom:6}}>{lang==='de'?'Modus':'Mode'}</div>
@@ -1371,7 +1374,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           <div className="lbl" style={{marginTop:12,marginBottom:6}}>{lang==='de'?'Skills / Hindernisse':'Skills / Obstacles'}</div>
           {(info.skillPhase?.skills||[]).map((sk,i)=>(
             <div key={sk.id} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',background:'rgba(255,255,255,.03)',borderRadius:10,marginBottom:4,border:'1px solid var(--border)'}}>
-              <span style={{fontSize:16}}>{['🏋️','⚡','🧗','🤸','💪','🎯','🔥','🌊'][i%8]}</span>
+              <div style={{width:22,height:22,borderRadius:6,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'var(--muted)',flexShrink:0}}>{i+1}</div>
               <input value={sk.name} onChange={e=>sI('skillPhase',{...(info.skillPhase||{}),skills:(info.skillPhase?.skills||[]).map((s,j)=>j===i?{...s,name:e.target.value}:s)})} style={{flex:1,padding:'4px 8px',fontSize:13}} placeholder={`Skill ${i+1}`}/>
               <button style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--red)',display:'flex'}} onClick={()=>sI('skillPhase',{...(info.skillPhase||{}),skills:(info.skillPhase?.skills||[]).filter((_,j)=>j!==i)})}><I.Trash s={14} c="var(--red)"/></button>
             </div>
@@ -1392,7 +1395,7 @@ const SetupWizard=({onDone,onBack,existingId=null,initialInfo=null,initialStages
           </div>
 
           {/* Seeding */}
-          <div className="lbl" style={{marginTop:12,marginBottom:6}}>🎯 {lang==='de'?'Seeding für Stage':'Seeding for stage'}</div>
+          <div className="lbl" style={{marginTop:12,marginBottom:6,display:'flex',alignItems:'center',gap:5}}><I.Sort s={13}/> {lang==='de'?'Seeding für Stage':'Seeding for stage'}</div>
           <div style={{display:'flex',gap:8}}>
             {[{id:'inverted',label:lang==='de'?'Invertiert (Schwächster zuerst)':'Inverted (weakest first)'},{id:'manual',label:lang==='de'?'Manuell':'Manual'}].map(s=>(
               <button key={s.id} className={`chip${(info.skillPhase?.seedingMode||'inverted')===s.id?' active':''}`} style={{flex:1,fontSize:11,justifyContent:'center',padding:'5px 8px'}} onClick={()=>sI('skillPhase',{...(info.skillPhase||{}),seedingMode:s.id})}>{s.label}</button>
@@ -1537,6 +1540,10 @@ const SkillPhaseView=({compId,info,athletes})=>{
   const [selCat,setSelCat]=useState(null);
   const [selSkill,setSelSkill]=useState(null);
   const [seedingDone,setSeedingDone]=useState(false);
+  const [showSiegerehrung,setShowSiegerehrung]=useState(false);
+  const [flashIds,setFlashIds]=useState(new Set());
+  const [liveNotif,setLiveNotif]=useState(null);
+  const prevScoresRef=React.useRef(null);
 
   const athList=athletes?Object.values(athletes):[];
   const skills=skillPhase.skills||[];
@@ -1586,6 +1593,13 @@ const SkillPhaseView=({compId,info,athletes})=>{
     SFX.complete();
   };
 
+  const openSiegerehrung=async()=>{
+    if(!window.confirm(lang==='de'?'Skill-Wettkampf abschließen und Siegerehrung anzeigen?\n\nKein Seeding für Stages wird generiert.':'Close skill competition and show awards ceremony?\n\nNo seeding for stages will be generated.'))return;
+    await fbSet(`ogn/${compId}/skillPhaseStatus/finalized`,true);
+    setShowSiegerehrung(true);
+    SFX.complete();
+  };
+
   const setAttempt=async(athId,skillId,attempt,success)=>{
     await fbSet(`ogn/${compId}/skillScores/${athId}/${skillId}/a${attempt}`,success);
     SFX.checkpoint();
@@ -1602,6 +1616,34 @@ const SkillPhaseView=({compId,info,athletes})=>{
     return{tries,result:null,pts:null};
   };
 
+  // Live animation: detect new passes
+  React.useEffect(()=>{
+    if(!skillScores){prevScoresRef.current=skillScores;return;}
+    if(!prevScoresRef.current){prevScoresRef.current=skillScores;return;}
+    const prev=prevScoresRef.current;
+    const newFlash=new Set();
+    let notifMsg=null;
+    athList.forEach(a=>{
+      skills.forEach(sk=>{
+        const cur=skillScores?.[a.id]?.[sk.id];
+        const prv=prev?.[a.id]?.[sk.id];
+        const curPassed=cur?.a1===true||(cur?.a1===false&&cur?.a2===true)||(cur?.a1===false&&cur?.a2===false&&cur?.a3===true);
+        const prvPassed=prv?.a1===true||(prv?.a1===false&&prv?.a2===true)||(prv?.a1===false&&prv?.a2===false&&prv?.a3===true);
+        if(curPassed&&!prvPassed){
+          newFlash.add(a.id);
+          const pts=cur?.a1===true?100:cur?.a2===true?50:20;
+          notifMsg=`${a.name} — ${sk.name||'Skill'} +${pts}P!`;
+        }
+      });
+    });
+    if(newFlash.size>0){
+      setFlashIds(newFlash);
+      if(notifMsg)setLiveNotif(notifMsg);
+      setTimeout(()=>{setFlashIds(new Set());setLiveNotif(null);},2600);
+    }
+    prevScoresRef.current=skillScores;
+  },[skillScores]);
+
   const curCatAths=selCat?athList.filter(a=>a.cat===selCat):[];
   const activeCat=selCat||cats[0];
   const ranking=getRanking(activeCat);
@@ -1614,7 +1656,9 @@ const SkillPhaseView=({compId,info,athletes})=>{
       {/* Header */}
       <div className="sh-card" style={{padding:'14px 16px',background:'rgba(52,199,89,.08)',borderColor:'rgba(52,199,89,.25)'}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-          <span style={{fontSize:22}}>🏃</span>
+          <div style={{width:32,height:32,borderRadius:'50%',background:'rgba(52,199,89,.2)',border:'1px solid rgba(52,199,89,.35)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="1.5" style={{width:17,height:17}}><circle cx="12" cy="5" r="2.5"/><path d="M12 8l-3 5h6l-3-5z"/><path d="M9 13l-2 6M15 13l2 6"/><path d="M9 17l6-1"/></svg>
+          </div>
           <div>
             <div style={{fontWeight:800,fontSize:15,color:'var(--green)'}}>{lang==='de'?'Skill Phase':'Skill Phase'}</div>
             <div style={{fontSize:11,color:'var(--muted)'}}>
@@ -1647,24 +1691,82 @@ const SkillPhaseView=({compId,info,athletes})=>{
         </div>
       )}
 
-      {/* Ranking view */}
+      {/* Ranking view — enhanced */}
       {!selSkill&&(
-        <div className="sh-card" style={{padding:'12px 14px'}}>
-          <div className="lbl" style={{marginBottom:8}}>{lang==='de'?'Skill-Rangliste':'Skill Ranking'} — {IGN_CATS.find(c=>c.id===activeCat)?.name[lang]||activeCat}</div>
-          {ranking.map((a,i)=>(
-            <div key={a.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:i<ranking.length-1?'1px solid var(--border)':'none'}}>
-              <div style={{width:24,textAlign:'center',fontWeight:800,fontSize:13,color:i===0?'var(--gold)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--muted)',fontFamily:'JetBrains Mono'}}>{i+1}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600}}>{a.name}</div>
-                <div style={{fontSize:10,color:'var(--muted)'}}>#{a.num}{a.team&&` · ${a.team}`}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {/* Header + live notification */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:28}}>
+            <div className="lbl" style={{margin:0}}>{lang==='de'?'Skill-Rangliste':'Skill Ranking'} — {IGN_CATS.find(c=>c.id===activeCat)?.name[lang]||activeCat}</div>
+            {liveNotif&&(
+              <div style={{fontSize:10,fontWeight:700,color:'var(--green)',background:'rgba(52,199,89,.18)',border:'1px solid rgba(52,199,89,.35)',borderRadius:7,padding:'3px 9px',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',animation:'skillNotif 2.6s ease forwards'}}>
+                {liveNotif}
               </div>
-              <div style={{textAlign:'right'}}>
-                <div style={{fontSize:16,fontWeight:800,color:a.skillTotal>0?'var(--cor)':'var(--dim)',fontFamily:'JetBrains Mono'}}>{a.skillTotal>0?a.skillTotal:'—'}</div>
-                <div style={{fontSize:9,color:'var(--muted)'}}>Punkte</div>
-              </div>
+            )}
+          </div>
+          {ranking.length===0&&(
+            <div className="sh-card" style={{padding:'20px',textAlign:'center',color:'var(--muted)',fontSize:13}}>
+              {lang==='de'?'Keine Athleten in dieser Kategorie':'No athletes in this category'}
             </div>
-          ))}
-          {ranking.length===0&&<div style={{textAlign:'center',padding:'20px',color:'var(--muted)',fontSize:13}}>{lang==='de'?'Keine Athleten in dieser Kategorie':'No athletes in this category'}</div>}
+          )}
+          {ranking.map((a,i)=>{
+            const isFlashing=flashIds.has(a.id);
+            const rankColor=i===0?'var(--gold)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--muted)';
+            return(
+              <div key={a.id} className="sh-card" style={{padding:'11px 13px',display:'flex',alignItems:'center',gap:11,
+                background:isFlashing?'rgba(52,199,89,.1)':'',
+                borderColor:isFlashing?'rgba(52,199,89,.35)':'',
+                animation:isFlashing?'skillFlash .5s ease':'',
+                transition:'background .4s,border-color .4s'}}>
+                {/* Rank badge */}
+                <div style={{width:26,textAlign:'center',fontWeight:900,fontSize:15,color:rankColor,fontFamily:'JetBrains Mono',flexShrink:0}}>{i+1}</div>
+                {/* Avatar */}
+                <div style={{width:38,height:38,borderRadius:'50%',background:i===0?'rgba(200,168,75,.18)':i===1?'rgba(192,192,192,.12)':i===2?'rgba(205,127,50,.12)':'rgba(255,255,255,.06)',border:`1.5px solid ${i===0?'rgba(200,168,75,.4)':i===1?'rgba(192,192,192,.25)':i===2?'rgba(205,127,50,.3)':'rgba(255,255,255,.1)'}`,display:'flex',alignItems:'center',justifyContent:'center',color:rankColor,flexShrink:0}}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:20,height:20}}><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>
+                {/* Info + skill dots */}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.name}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>#{a.num}{a.team?` · ${a.team}`:''}</div>
+                  {skills.length>0&&(
+                    <div style={{display:'flex',gap:3,marginTop:5,flexWrap:'wrap'}}>
+                      {skills.map(sk=>{
+                        const res=getAttemptResult(a.id,sk.id);
+                        const passed=res.result==='pass';
+                        const failed=res.result==='fail';
+                        return(
+                          <div key={sk.id} title={`${sk.name||'Skill'}${passed?` +${res.pts}pts`:failed?' ✗':' …'}`}
+                            style={{display:'flex',alignItems:'center',gap:2,
+                              background:passed?'rgba(52,199,89,.15)':failed?'rgba(255,59,48,.1)':'rgba(255,255,255,.05)',
+                              borderRadius:4,padding:'2px 5px',
+                              border:`1px solid ${passed?'rgba(52,199,89,.3)':failed?'rgba(255,59,48,.2)':'rgba(255,255,255,.08)'}`,
+                              animation:isFlashing&&passed?'countUp .35s ease':''}}>
+                            <div style={{width:5,height:5,borderRadius:'50%',flexShrink:0,
+                              background:passed?'var(--green)':failed?'var(--red)':'var(--dim)'}}/>
+                            <span style={{fontSize:8,fontWeight:700,maxWidth:36,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                              color:passed?'var(--green)':failed?'var(--red)':'var(--muted)'}}>
+                              {sk.name||`S${skills.indexOf(sk)+1}`}
+                            </span>
+                            {passed&&<span style={{fontSize:8,fontWeight:800,color:'var(--green)',marginLeft:1}}>+{res.pts}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                {/* Score */}
+                <div style={{textAlign:'right',flexShrink:0}}>
+                  <div style={{fontSize:22,fontWeight:900,lineHeight:1,
+                    color:a.skillTotal>0?(i===0?'var(--gold)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--cor)'):'var(--dim)',
+                    fontFamily:'JetBrains Mono',
+                    animation:isFlashing&&a.skillTotal>0?'countUp .3s ease':'',
+                    transition:'color .3s'}}>
+                    {a.skillTotal>0?a.skillTotal:'—'}
+                  </div>
+                  <div style={{fontSize:9,color:'var(--muted)',marginTop:2}}>{lang==='de'?'Punkte':'pts'}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -1718,16 +1820,99 @@ const SkillPhaseView=({compId,info,athletes})=>{
         );
       })()}
 
-      {/* Generate seeding button */}
-      <div style={{marginTop:8,padding:'0 0 4px'}}>
-        {seedingAlreadyDone&&<div style={{fontSize:11,color:'var(--green)',textAlign:'center',marginBottom:8,display:'flex',alignItems:'center',justifyContent:'center',gap:5}}><I.Check s={12} c="var(--green)"/> {lang==='de'?'Seeding wurde generiert':'Seeding generated'}</div>}
-        <button className="btn btn-coral" style={{width:'100%',padding:'12px',fontSize:14,gap:8}} onClick={generateSeeding}>
-          🎯 {lang==='de'?`Seeding generieren (${skillPhase.seedingMode==='inverted'?'Invertiert':'Manuell'})`:`Generate seeding (${skillPhase.seedingMode==='inverted'?'inverted':'manual'})`}
+      {/* Action buttons */}
+      <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
+        {seedingAlreadyDone&&<div style={{fontSize:11,color:'var(--green)',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}><I.Check s={12} c="var(--green)"/> {lang==='de'?'Seeding wurde generiert':'Seeding generated'}</div>}
+        {skillStatus?.finalized&&<div style={{fontSize:11,color:'var(--gold)',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}><I.Trophy s={12} c="var(--gold)"/> {lang==='de'?'Wettkampf abgeschlossen':'Competition finalized'}</div>}
+        <button className="btn btn-coral" style={{width:'100%',padding:'11px',fontSize:13,gap:8}} onClick={generateSeeding}>
+          <I.Sort s={14}/> {lang==='de'?`Seeding → Stage (${skillPhase.seedingMode==='inverted'?'Invertiert':'Manuell'})`:`Seeding → Stage (${skillPhase.seedingMode==='inverted'?'inverted':'manual'})`}
         </button>
-        <div style={{fontSize:10,color:'var(--muted)',textAlign:'center',marginTop:6,lineHeight:1.4}}>
-          {skillPhase.seedingMode==='inverted'?(lang==='de'?'Niedrigste Skill-Punkte → zuerst auf den Stage-Parcours':'Lowest skill points → first on stage'):lang==='de'?'Reihenfolge wie im Skill-Ranking':'Order as in skill ranking'}
+        <div style={{fontSize:10,color:'var(--muted)',textAlign:'center',lineHeight:1.4,marginTop:-2}}>
+          {skillPhase.seedingMode==='inverted'?(lang==='de'?'Niedrigste Skill-Punkte → zuerst auf den Stage-Parcours':'Lowest skill pts → first on stage'):lang==='de'?'Reihenfolge wie im Skill-Ranking':'Order as in skill ranking'}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{flex:1,height:1,background:'var(--border)'}}/>
+          <span style={{fontSize:10,color:'var(--dim)',letterSpacing:'.08em'}}>{lang==='de'?'ODER':'OR'}</span>
+          <div style={{flex:1,height:1,background:'var(--border)'}}/>
+        </div>
+        <button className="btn btn-ghost" style={{width:'100%',padding:'11px',fontSize:13,gap:8,borderColor:'rgba(200,168,75,.35)',color:'var(--gold)'}} onClick={openSiegerehrung}>
+          <I.Trophy s={14}/> {lang==='de'?'Siegerehrung / Wettkampf abschließen':'Awards Ceremony / Close Competition'}
+        </button>
+        <div style={{fontSize:10,color:'var(--muted)',textAlign:'center',lineHeight:1.4,marginTop:-2}}>
+          {lang==='de'?'Reiner Skill-WK ohne Stages — Podium & Rangliste anzeigen':'Standalone skill comp — show podium & ranking'}
         </div>
       </div>
+
+      {/* Siegerehrung modal */}
+      {showSiegerehrung&&(()=>{
+        const podCat=activeCat;
+        const podRank=getRanking(podCat);
+        const top3=podRank.slice(0,3);
+        const podColors=['var(--gold)','#C0C0C0','#CD7F32'];
+        const podHeights=[100,70,50];
+        return(
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.88)',zIndex:9000,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20,overflowY:'auto'}} onClick={e=>{if(e.target===e.currentTarget)setShowSiegerehrung(false);}}>
+            <div style={{width:'100%',maxWidth:440,background:'var(--bg2)',borderRadius:18,border:'1px solid rgba(200,168,75,.3)',padding:'24px 20px',position:'relative',boxShadow:'0 20px 60px rgba(0,0,0,.65)',animation:'scaleIn .3s ease'}}>
+              <button style={{position:'absolute',top:12,right:14,background:'none',border:'none',color:'var(--muted)',cursor:'pointer',fontSize:20,lineHeight:1}} onClick={()=>setShowSiegerehrung(false)}>×</button>
+              {/* Title */}
+              <div style={{textAlign:'center',marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:700,color:'var(--gold)',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:4}}>{lang==='de'?'Siegerehrung':'Awards Ceremony'}</div>
+                <div style={{fontSize:20,fontWeight:900}}>{info?.name||'Skill Wettkampf'}</div>
+                <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>{IGN_CATS.find(c=>c.id===podCat)?.name[lang]||podCat}</div>
+              </div>
+              {/* Podium */}
+              <div style={{display:'flex',alignItems:'flex-end',justifyContent:'center',gap:8,marginBottom:24,height:160}}>
+                {[1,0,2].map(rank=>{
+                  const a=top3[rank];
+                  if(!a)return<div key={rank} style={{flex:1}}/>;
+                  const pos=rank+1;
+                  const col=podColors[rank];
+                  const h=podHeights[rank];
+                  return(
+                    <div key={rank} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,flex:1}}>
+                      <div style={{width:rank===0?44:36,height:rank===0?44:36,borderRadius:'50%',background:`${col}22`,border:`2px solid ${col}`,display:'flex',alignItems:'center',justifyContent:'center',color:col,boxShadow:rank===0?`0 0 16px ${col}55`:'none'}}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:rank===0?22:18,height:rank===0?22:18}}><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                      </div>
+                      <div style={{fontSize:rank===0?12:10,fontWeight:800,textAlign:'center',maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:col}}>{a.name}</div>
+                      <div style={{fontSize:rank===0?18:14,fontWeight:900,color:col,fontFamily:'JetBrains Mono'}}>{a.skillTotal}</div>
+                      <div style={{background:`${col}22`,border:`1px solid ${col}`,borderRadius:'6px 6px 0 0',width:'100%',height:h,display:'flex',alignItems:'center',justifyContent:'center',fontSize:rank===0?30:22,fontWeight:900,color:col,boxShadow:rank===0?`0 0 20px ${col}33`:''}}>
+                        {pos}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Category selector if multiple cats */}
+              {cats.length>1&&(
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',justifyContent:'center',marginBottom:12}}>
+                  {cats.map(catId=>{const cat=IGN_CATS.find(c=>c.id===catId);return(
+                    <button key={catId} className={`chip${podCat===catId?' active':''}`} style={{fontSize:10,padding:'2px 8px'}} onClick={()=>setSelCat(catId)}>{cat?.name[lang]||catId}</button>
+                  );})}
+                </div>
+              )}
+              {/* Full ranking list */}
+              <div style={{borderTop:'1px solid var(--border)',paddingTop:12}}>
+                <div style={{fontSize:10,color:'var(--muted)',marginBottom:8,textAlign:'center',letterSpacing:'.06em'}}>{lang==='de'?'VOLLSTÄNDIGE RANGLISTE':'FULL RANKING'}</div>
+                {podRank.map((a,i)=>(
+                  <div key={a.id} style={{display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:i<podRank.length-1?'1px solid var(--border)':''}}>
+                    <div style={{width:22,textAlign:'center',fontWeight:800,fontSize:13,color:podColors[i]||'var(--muted)',fontFamily:'JetBrains Mono',flexShrink:0}}>{i+1}</div>
+                    <div style={{width:32,height:32,borderRadius:'50%',background:(podColors[i]||'rgba(255,255,255,.06)')+'22',border:`1.5px solid ${(podColors[i]||'rgba(255,255,255,.1)')}55`,display:'flex',alignItems:'center',justifyContent:'center',color:podColors[i]||'var(--muted)',flexShrink:0}}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:17,height:17}}><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:700}}>{a.name}</div>
+                      <div style={{fontSize:10,color:'var(--muted)'}}>#{a.num}{a.team?` · ${a.team}`:''}</div>
+                    </div>
+                    <div style={{fontSize:16,fontWeight:800,color:podColors[i]||'var(--text)',fontFamily:'JetBrains Mono'}}>{a.skillTotal>0?a.skillTotal:'—'}</div>
+                  </div>
+                ))}
+                {podRank.length===0&&<div style={{textAlign:'center',padding:'16px',color:'var(--muted)',fontSize:13}}>{lang==='de'?'Keine Resultate':'No results'}</div>}
+              </div>
+              <button className="btn btn-ghost" style={{width:'100%',marginTop:16,padding:'10px',fontSize:13}} onClick={()=>setShowSiegerehrung(false)}>{lang==='de'?'Schließen':'Close'}</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
@@ -1901,7 +2086,7 @@ const handleDeleteAth=async(a)=>{
             {k:'results',     ic:<I.Trophy s={13}/>, lb:'Ranking'},
             {k:'queue',       ic:<I.User s={13}/>, lb:'Next up'},
             {k:'stats',       ic:<I.TrendUp s={13}/>, lb:'Stats'},
-            ...(info?.skillPhase?.enabled?[{k:'skills',ic:<span style={{fontSize:13}}>🏃</span>,lb:'Skills'}]:[]),
+            ...(info?.skillPhase?.enabled?[{k:'skills',ic:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13" cy="4" r="2"/><path d="M10.5 9l-2.5 5h4l2 4"/><path d="M8.5 21l2-4M14.5 13l2 4-3.5 1.5"/></svg>,lb:'Skills'}]:[]),
           ].map(({k,ic,lb})=>(
             <button key={k} style={{flex:1,padding:'8px 4px',borderRadius:22,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:5,fontSize:11,fontWeight:700,letterSpacing:'.03em',minWidth:0,
               background:coordView===k?'var(--coral)':'transparent',
@@ -2874,7 +3059,7 @@ const SkillSelfEntryView=({compId})=>{
 
   return(
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-      <TopBar title="🏃 Skill Phase" sub={info.name||''} logo={false}/>
+      <TopBar title="Skill Phase" sub={info.name||''} logo={false}/>
       <div className="section" style={{flex:1}}>
         {!selAth&&(
           <>
@@ -2915,7 +3100,7 @@ const SkillSelfEntryView=({compId})=>{
                 <div key={sk.id} className="sh-card" style={{padding:'14px 16px',marginBottom:10,borderColor:score.completed?'rgba(52,199,89,.4)':'var(--border)',background:score.completed?'rgba(52,199,89,.06)':'var(--card)'}}>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                     <div>
-                      <div style={{fontWeight:700,fontSize:14}}>{['🏋️','⚡','🧗','🤸','💪','🎯','🔥','🌊'][si%8]} {sk.name||`Skill ${si+1}`}</div>
+                      <div style={{fontWeight:700,fontSize:14,display:'flex',alignItems:'center',gap:6}}><div style={{width:20,height:20,borderRadius:5,background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,color:'var(--muted)',flexShrink:0}}>{si+1}</div>{sk.name||`Skill ${si+1}`}</div>
                       <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>
                         {score.completed?(
                           <span style={{color:'var(--green)'}}>✓ {lang==='de'?'Geschafft':'Completed'}{score.flashed?` · ⚡ Flash (+20%)`:''} · {score.attempts} {lang==='de'?'Versuch(e)':'attempt(s)'}</span>
